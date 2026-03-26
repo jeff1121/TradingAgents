@@ -1,0 +1,110 @@
+# 程式碼審查工作流程
+# 當 Pull Request 建立或更新時，自動執行程式碼品質檢查，
+# 包含程式碼風格檢查（flake8）與靜態型別檢查（mypy），
+# 並將審查結果以摘要方式呈現於 PR 中。
+
+name: 程式碼審查
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  code-review:
+    name: 程式碼品質檢查
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # 步驟 1：取得原始碼
+      - name: 取得原始碼
+        uses: actions/checkout@v4
+
+      # 步驟 2：設定 Python 環境
+      - name: 設定 Python 環境
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # 步驟 3：安裝審查所需工具
+      - name: 安裝審查工具
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 mypy
+          # 安裝專案依賴，以便進行完整的靜態分析
+          pip install -e .
+
+      # 步驟 4：執行 flake8 程式碼風格與錯誤檢查
+      - name: 執行 flake8 程式碼風格檢查
+        id: flake8
+        # 即使檢查失敗也繼續執行後續步驟，以收集所有問題
+        continue-on-error: true
+        run: |
+          echo "## 🔍 Flake8 程式碼風格檢查結果" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # 執行 flake8，忽略過長行（E501）與部分匯入相關警告
+          if flake8 tradingagents/ cli/ \
+            --count \
+            --select=E9,F63,F7,F82 \
+            --show-source \
+            --statistics 2>&1 | tee /tmp/flake8_critical.txt; then
+            echo "✅ 未發現嚴重語法或邏輯錯誤" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ 發現嚴重問題，請查看以下詳細報告：" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            cat /tmp/flake8_critical.txt >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### 程式碼複雜度與風格統計" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          # 執行完整檢查，設定最大行長度為 120，最大複雜度為 10
+          flake8 tradingagents/ cli/ \
+            --count \
+            --max-complexity=10 \
+            --max-line-length=120 \
+            --statistics 2>&1 | tee /tmp/flake8_full.txt || true
+
+          cat /tmp/flake8_full.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      # 步驟 5：執行 mypy 靜態型別檢查
+      - name: 執行 mypy 靜態型別檢查
+        id: mypy
+        continue-on-error: true
+        run: |
+          echo "## 🔎 Mypy 靜態型別檢查結果" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          # 使用寬鬆模式執行 mypy，忽略缺少型別提示的匯入
+          mypy tradingagents/ cli/ \
+            --ignore-missing-imports \
+            --no-strict-optional \
+            --allow-untyped-defs 2>&1 | tee /tmp/mypy_output.txt || true
+
+          cat /tmp/mypy_output.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      # 步驟 6：彙整審查摘要
+      - name: 彙整審查摘要
+        run: |
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "---" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 📋 審查摘要" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| 檢查項目 | 狀態 |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---------|------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Flake8 程式碼風格 | ${{ steps.flake8.outcome == 'success' && '✅ 通過' || '⚠️ 有警告' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Mypy 型別檢查 | ${{ steps.mypy.outcome == 'success' && '✅ 通過' || '⚠️ 有警告' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "> 📌 **提醒**：請參閱各步驟的詳細輸出以瞭解具體問題並進行修正。" >> "$GITHUB_STEP_SUMMARY"

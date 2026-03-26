@@ -1,0 +1,84 @@
+# 持續整合 (CI) 工作流程
+# 監聽 main 分支的推送與 Pull Request 事件，
+# 自動執行測試套件與專案建置，確保程式碼品質與穩定性。
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: 測試與建置
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      # 步驟 1：取得原始碼
+      - name: 取得原始碼
+        uses: actions/checkout@v4
+
+      # 步驟 2：設定 Python 環境
+      - name: 設定 Python ${{ matrix.python-version }} 環境
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      # 步驟 3：安裝專案依賴
+      - name: 安裝依賴套件
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          # 安裝測試所需的額外套件
+          pip install pytest
+
+      # 步驟 4：執行測試套件
+      - name: 執行測試
+        run: |
+          echo "## 🧪 測試結果 (Python ${{ matrix.python-version }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # 使用 pytest 執行測試，輸出詳細結果
+          if python -m pytest tests/ -v --tb=short 2>&1 | tee /tmp/test_output.txt; then
+            echo "✅ 所有測試通過" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ 部分測試失敗，請查看以下詳細資訊：" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -50 /tmp/test_output.txt >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      # 步驟 5：建置專案套件
+      - name: 建置專案
+        run: |
+          pip install build
+          python -m build
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 📦 建置結果" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ 專案建置成功" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          ls -lh dist/ >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      # 步驟 6：上傳建置產物
+      - name: 上傳建置產物
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-packages
+          path: dist/
+          retention-days: 7
