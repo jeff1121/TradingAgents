@@ -1,0 +1,53 @@
+# CodeQL 安全程式碼掃描工作流程
+# 使用 GitHub CodeQL 對程式碼進行靜態安全分析，
+# 自動偵測潛在漏洞與安全問題，並將結果回報至 GitHub Security 標籤。
+
+name: CodeQL 安全程式碼掃描
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # 每週一凌晨 3 點 (UTC) 執行排程掃描，確保持續監控安全性
+    - cron: "0 3 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    name: CodeQL 分析
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python]
+
+    steps:
+      # 步驟 1：取得原始碼
+      - name: 取得原始碼
+        uses: actions/checkout@v4
+
+      # 步驟 2：初始化 CodeQL 分析引擎
+      - name: 初始化 CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # 使用 security-and-quality 查詢套件以獲得更全面的掃描結果
+          queries: security-and-quality
+
+      # 步驟 3：自動建置專案（CodeQL 會自動偵測建置方式）
+      - name: 自動建置
+        uses: github/codeql-action/autobuild@v3
+
+      # 步驟 4：執行 CodeQL 分析並上傳結果
+      - name: 執行 CodeQL 分析
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
