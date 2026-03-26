@@ -107,14 +107,18 @@ git clone https://github.com/jeff1121/TradingAgents.git
 cd TradingAgents
 ```
 
-使用你偏好的環境管理工具建立虛擬環境：
+使用你偏好的環境管理工具建立虛擬環境並安裝套件：
+
+**推薦：使用 uv（速度最快）**
+```bash
+pip install uv                 # 若尚未安裝 uv
+uv sync                        # 自動建立 .venv 並從 uv.lock 還原所有依賴
+```
+
+**或使用 conda**
 ```bash
 conda create -n tradingagents python=3.13
 conda activate tradingagents
-```
-
-安裝套件及其相依套件：
-```bash
 pip install .
 ```
 

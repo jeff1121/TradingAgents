@@ -153,6 +153,9 @@ activemq-data/
 .venv
 env/
 venv/
+
+# uv
+.uv-cache/
 ENV/
 env.bak/
 venv.bak/

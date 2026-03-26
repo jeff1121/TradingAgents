@@ -3,19 +3,23 @@
 ## 建置與執行
 
 ```bash
-pip install .                  # Install package + dependencies
-pip install -e .               # Editable install for development
-tradingagents                  # Launch interactive CLI
-python -m cli.main             # Alternative CLI launch
-python main.py                 # Run single analysis via script
+uv sync                        # Install package + dependencies（從 uv.lock 還原，推薦）
+uv sync --dev                  # 含開發依賴（如 pytest）
+uv run tradingagents           # Launch interactive CLI
+uv run python -m cli.main      # Alternative CLI launch
+uv run python main.py          # Run single analysis via script
 ```
+
+> 若已啟動虛擬環境（`source .venv/bin/activate`），可直接使用 `tradingagents` / `python -m cli.main`。
+>
+> 舊版相容：`pip install .` 與 `pip install -e .` 仍可正常使用（setuptools 不變）。
 
 ### 測試
 
 ```bash
-python -m pytest tests/                                  # Full suite
-python -m pytest tests/test_ticker_symbol_handling.py    # Single file
-python -m pytest tests/test_ticker_symbol_handling.py::TickerSymbolHandlingTests::test_normalize_ticker_symbol_preserves_exchange_suffix  # Single test
+uv run pytest tests/                                  # Full suite
+uv run pytest tests/test_ticker_symbol_handling.py    # Single file
+uv run pytest tests/test_ticker_symbol_handling.py::TickerSymbolHandlingTests::test_normalize_ticker_symbol_preserves_exchange_suffix  # Single test
 ```
 
 測試使用 `unittest.TestCase`，由 pytest 進行探索與執行。
