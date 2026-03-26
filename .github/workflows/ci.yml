@@ -49,13 +49,13 @@ jobs:
           echo "## 🧪 測試結果 (Python ${{ matrix.python-version }})" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
-          # 使用 pytest 執行測試，輸出詳細結果
-          if python -m pytest tests/ -v --tb=short 2>&1 | tee /tmp/test_output.txt; then
+          # 使用 pytest 執行測試，輸出詳細結果並產生 JUnit XML 報告
+          if python -m pytest tests/ -v --tb=short --junitxml=test-results.xml 2>&1 | tee /tmp/test_output.txt; then
             echo "✅ 所有測試通過" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "❌ 部分測試失敗，請查看以下詳細資訊：" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
-            tail -50 /tmp/test_output.txt >> "$GITHUB_STEP_SUMMARY"
+            cat /tmp/test_output.txt >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
