@@ -40,6 +40,7 @@ def get_YFin_data_online(
     csv_string = data.to_csv()
 
     # 加入標頭資訊
+    header = f"# Stock data for {symbol.upper()}\n"
     header += f"# Total records: {len(data)}\n"
     header += f"# Data retrieved on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
 

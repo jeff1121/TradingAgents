@@ -78,6 +78,14 @@ class TradingAgentsGraph:
         if self.callbacks:
             llm_kwargs["callbacks"] = self.callbacks
 
+        # quick_think_llm 用於呼叫工具的分析師代理，不可啟用 thinking
+        # （Gemini thinking 模式下工具呼叫需 thought_signature，langchain 尚未支援）
+        # 移除思考相關 kwargs，並對 Google 明確關閉 thinking（thinking_budget=0）
+        thinking_keys = ("thinking_level", "thinking_budget", "reasoning_effort", "effort")
+        quick_kwargs = {k: v for k, v in llm_kwargs.items() if k not in thinking_keys}
+        if self.config.get("llm_provider", "").lower() == "google":
+            quick_kwargs["thinking_budget"] = 0  # 明確關閉 Gemini thinking，避免 thought_signature 問題
+
         deep_client = create_llm_client(
             provider=self.config["llm_provider"],
             model=self.config["deep_think_llm"],
@@ -88,7 +96,7 @@ class TradingAgentsGraph:
             provider=self.config["llm_provider"],
             model=self.config["quick_think_llm"],
             base_url=self.config.get("backend_url"),
-            **llm_kwargs,
+            **quick_kwargs,
         )
 
         self.deep_thinking_llm = deep_client.get_llm()
