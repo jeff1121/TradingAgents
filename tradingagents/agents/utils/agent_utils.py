@@ -1,6 +1,6 @@
 from langchain_core.messages import HumanMessage, RemoveMessage
 
-# Import tools from separate utility files
+# 從各工具模組匯入工具
 from tradingagents.agents.utils.core_stock_tools import (
     get_stock_data
 )
@@ -21,7 +21,7 @@ from tradingagents.agents.utils.news_data_tools import (
 
 
 def build_instrument_context(ticker: str) -> str:
-    """Describe the exact instrument so agents preserve exchange-qualified tickers."""
+    """描述確切的金融工具，以便代理程式保留含交易所後綴的股票代碼。"""
     return (
         f"The instrument to analyze is `{ticker}`. "
         "Use this exact ticker in every tool call, report, and recommendation, "
@@ -30,13 +30,13 @@ def build_instrument_context(ticker: str) -> str:
 
 def create_msg_delete():
     def delete_messages(state):
-        """Clear messages and add placeholder for Anthropic compatibility"""
+        """清除訊息並新增佔位訊息以相容 Anthropic"""
         messages = state["messages"]
 
-        # Remove all messages
+        # 移除所有訊息
         removal_operations = [RemoveMessage(id=m.id) for m in messages]
 
-        # Add a minimal placeholder message
+        # 新增最小化的佔位訊息
         placeholder = HumanMessage(content="Continue")
 
         return {"messages": removal_operations + [placeholder]}

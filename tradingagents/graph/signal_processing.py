@@ -1,24 +1,24 @@
-# TradingAgents/graph/signal_processing.py
+# TradingAgents/graph/signal_processing.py — 訊號處理模組
 
 from langchain_openai import ChatOpenAI
 
 
 class SignalProcessor:
-    """Processes trading signals to extract actionable decisions."""
+    """處理交易訊號以提取可執行的決策。"""
 
     def __init__(self, quick_thinking_llm: ChatOpenAI):
-        """Initialize with an LLM for processing."""
+        """以 LLM 進行初始化以處理訊號。"""
         self.quick_thinking_llm = quick_thinking_llm
 
     def process_signal(self, full_signal: str) -> str:
         """
-        Process a full trading signal to extract the core decision.
+        處理完整的交易訊號以提取核心決策。
 
         Args:
-            full_signal: Complete trading signal text
+            full_signal: 完整的交易訊號文字
 
         Returns:
-            Extracted rating (BUY, OVERWEIGHT, HOLD, UNDERWEIGHT, or SELL)
+            提取的評級（BUY、OVERWEIGHT、HOLD、UNDERWEIGHT 或 SELL）
         """
         messages = [
             (

@@ -1,4 +1,4 @@
-# TradingAgents/graph/propagation.py
+# TradingAgents/graph/propagation.py — 狀態傳播模組
 
 from typing import Dict, Any, List, Optional
 from tradingagents.agents.utils.agent_states import (
@@ -9,16 +9,16 @@ from tradingagents.agents.utils.agent_states import (
 
 
 class Propagator:
-    """Handles state initialization and propagation through the graph."""
+    """處理狀態初始化以及在圖中的傳播。"""
 
     def __init__(self, max_recur_limit=100):
-        """Initialize with configuration parameters."""
+        """以設定參數進行初始化。"""
         self.max_recur_limit = max_recur_limit
 
     def create_initial_state(
         self, company_name: str, trade_date: str
     ) -> Dict[str, Any]:
-        """Create the initial state for the agent graph."""
+        """建立代理圖的初始狀態。"""
         return {
             "messages": [("human", company_name)],
             "company_of_interest": company_name,
@@ -54,11 +54,11 @@ class Propagator:
         }
 
     def get_graph_args(self, callbacks: Optional[List] = None) -> Dict[str, Any]:
-        """Get arguments for the graph invocation.
+        """取得圖執行時的引數。
 
         Args:
-            callbacks: Optional list of callback handlers for tool execution tracking.
-                       Note: LLM callbacks are handled separately via LLM constructor.
+            callbacks: 可選的回呼處理器列表，用於追蹤工具執行。
+                       注意：LLM 回呼是透過 LLM 建構函式另行處理的。
         """
         config = {"recursion_limit": self.max_recur_limit}
         if callbacks:

@@ -7,10 +7,10 @@ from .validators import validate_model
 
 
 class NormalizedChatGoogleGenerativeAI(ChatGoogleGenerativeAI):
-    """ChatGoogleGenerativeAI with normalized content output.
+    """具有正規化內容輸出的 ChatGoogleGenerativeAI。
 
-    Gemini 3 models return content as list of typed blocks.
-    This normalizes to string for consistent downstream handling.
+    Gemini 3 模型會以型別區塊清單回傳內容。
+    此類別將其正規化為字串，確保下游處理的一致性。
     """
 
     def invoke(self, input, config=None, **kwargs):
@@ -18,37 +18,37 @@ class NormalizedChatGoogleGenerativeAI(ChatGoogleGenerativeAI):
 
 
 class GoogleClient(BaseLLMClient):
-    """Client for Google Gemini models."""
+    """Google Gemini 模型的客戶端。"""
 
     def __init__(self, model: str, base_url: Optional[str] = None, **kwargs):
         super().__init__(model, base_url, **kwargs)
 
     def get_llm(self) -> Any:
-        """Return configured ChatGoogleGenerativeAI instance."""
+        """回傳已設定的 ChatGoogleGenerativeAI 實例。"""
         llm_kwargs = {"model": self.model}
 
         for key in ("timeout", "max_retries", "google_api_key", "callbacks", "http_client", "http_async_client"):
             if key in self.kwargs:
                 llm_kwargs[key] = self.kwargs[key]
 
-        # Map thinking_level to appropriate API param based on model
-        # Gemini 3 Pro: low, high
-        # Gemini 3 Flash: minimal, low, medium, high
-        # Gemini 2.5: thinking_budget (0=disable, -1=dynamic)
+        # 根據模型將 thinking_level 對應到適當的 API 參數
+        # Gemini 3 Pro：low、high
+        # Gemini 3 Flash：minimal、low、medium、high
+        # Gemini 2.5：thinking_budget（0=停用，-1=動態）
         thinking_level = self.kwargs.get("thinking_level")
         if thinking_level:
             model_lower = self.model.lower()
             if "gemini-3" in model_lower:
-                # Gemini 3 Pro doesn't support "minimal", use "low" instead
+                # Gemini 3 Pro 不支援 "minimal"，改用 "low"
                 if "pro" in model_lower and thinking_level == "minimal":
                     thinking_level = "low"
                 llm_kwargs["thinking_level"] = thinking_level
             else:
-                # Gemini 2.5: map to thinking_budget
+                # Gemini 2.5：對應到 thinking_budget
                 llm_kwargs["thinking_budget"] = -1 if thinking_level == "high" else 0
 
         return NormalizedChatGoogleGenerativeAI(**llm_kwargs)
 
     def validate_model(self) -> bool:
-        """Validate model for Google."""
+        """驗證 Google 的模型。"""
         return validate_model("google", self.model)

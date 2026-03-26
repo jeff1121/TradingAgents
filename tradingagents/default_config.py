@@ -7,29 +7,29 @@ DEFAULT_CONFIG = {
         os.path.abspath(os.path.join(os.path.dirname(__file__), ".")),
         "dataflows/data_cache",
     ),
-    # LLM settings
+    # LLM 設定
     "llm_provider": "openai",
     "deep_think_llm": "gpt-5.2",
     "quick_think_llm": "gpt-5-mini",
     "backend_url": "https://api.openai.com/v1",
-    # Provider-specific thinking configuration
-    "google_thinking_level": None,      # "high", "minimal", etc.
-    "openai_reasoning_effort": None,    # "medium", "high", "low"
-    "anthropic_effort": None,           # "high", "medium", "low"
-    # Debate and discussion settings
+    # 供應商專用思考配置
+    "google_thinking_level": None,      # "high"、"minimal" 等
+    "openai_reasoning_effort": None,    # "medium"、"high"、"low"
+    "anthropic_effort": None,           # "high"、"medium"、"low"
+    # 辯論與討論設定
     "max_debate_rounds": 1,
     "max_risk_discuss_rounds": 1,
     "max_recur_limit": 100,
-    # Data vendor configuration
-    # Category-level configuration (default for all tools in category)
+    # 資料供應商配置
+    # 類別層級配置（該類別中所有工具的預設值）
     "data_vendors": {
-        "core_stock_apis": "yfinance",       # Options: alpha_vantage, yfinance
-        "technical_indicators": "yfinance",  # Options: alpha_vantage, yfinance
-        "fundamental_data": "yfinance",      # Options: alpha_vantage, yfinance
-        "news_data": "yfinance",             # Options: alpha_vantage, yfinance
+        "core_stock_apis": "yfinance",       # 選項：alpha_vantage、yfinance
+        "technical_indicators": "yfinance",  # 選項：alpha_vantage、yfinance
+        "fundamental_data": "yfinance",      # 選項：alpha_vantage、yfinance
+        "news_data": "yfinance",             # 選項：alpha_vantage、yfinance
     },
-    # Tool-level configuration (takes precedence over category-level)
+    # 工具層級配置（優先於類別層級）
     "tool_vendors": {
-        # Example: "get_stock_data": "alpha_vantage",  # Override category default
+        # 範例："get_stock_data": "alpha_vantage",  # 覆寫類別預設值
     },
 }

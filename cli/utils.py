@@ -18,7 +18,7 @@ ANALYST_ORDER = [
 
 
 def get_ticker() -> str:
-    """Prompt the user to enter a ticker symbol."""
+    """提示使用者輸入股票代碼。"""
     ticker = questionary.text(
         f"Enter the exact ticker symbol to analyze ({TICKER_INPUT_EXAMPLES}):",
         validate=lambda x: len(x.strip()) > 0 or "Please enter a valid ticker symbol.",
@@ -38,12 +38,12 @@ def get_ticker() -> str:
 
 
 def normalize_ticker_symbol(ticker: str) -> str:
-    """Normalize ticker input while preserving exchange suffixes."""
+    """正規化股票代碼輸入，同時保留交易所後綴。"""
     return ticker.strip().upper()
 
 
 def get_analysis_date() -> str:
-    """Prompt the user to enter a date in YYYY-MM-DD format."""
+    """提示使用者輸入 YYYY-MM-DD 格式的日期。"""
     import re
     from datetime import datetime
 
@@ -76,7 +76,7 @@ def get_analysis_date() -> str:
 
 
 def select_analysts() -> List[AnalystType]:
-    """Select analysts using an interactive checkbox."""
+    """使用互動式核取方塊選擇分析師。"""
     choices = questionary.checkbox(
         "Select Your [Analysts Team]:",
         choices=[
@@ -102,9 +102,9 @@ def select_analysts() -> List[AnalystType]:
 
 
 def select_research_depth() -> int:
-    """Select research depth using an interactive selection."""
+    """使用互動式選擇來設定研究深度。"""
 
-    # Define research depth options with their corresponding values
+    # 定義研究深度選項及其對應值
     DEPTH_OPTIONS = [
         ("Shallow - Quick research, few debate and strategy discussion rounds", 1),
         ("Medium - Middle ground, moderate debate rounds and strategy discussion", 3),
@@ -134,11 +134,11 @@ def select_research_depth() -> int:
 
 
 def select_shallow_thinking_agent(provider) -> str:
-    """Select shallow thinking llm engine using an interactive selection."""
+    """使用互動式選擇來選取快速思考 LLM 引擎。"""
 
-    # Define shallow thinking llm engine options with their corresponding model names
-    # Ordering: medium → light → heavy (balanced first for quick tasks)
-    # Within same tier, newer models first
+    # 定義快速思考 LLM 引擎選項及其對應的模型名稱
+    # 排序：中量級 → 輕量級 → 重量級（快速任務優先選擇平衡型）
+    # 同層級中較新的模型排在前面
     SHALLOW_AGENT_OPTIONS = {
         "openai": [
             ("GPT-5 Mini - Balanced speed, cost, and capability", "gpt-5-mini"),
@@ -199,11 +199,11 @@ def select_shallow_thinking_agent(provider) -> str:
 
 
 def select_deep_thinking_agent(provider) -> str:
-    """Select deep thinking llm engine using an interactive selection."""
+    """使用互動式選擇來選取深度思考 LLM 引擎。"""
 
-    # Define deep thinking llm engine options with their corresponding model names
-    # Ordering: heavy → medium → light (most capable first for deep tasks)
-    # Within same tier, newer models first
+    # 定義深度思考 LLM 引擎選項及其對應的模型名稱
+    # 排序：重量級 → 中量級 → 輕量級（深度任務優先選擇最強模型）
+    # 同層級中較新的模型排在前面
     DEEP_AGENT_OPTIONS = {
         "openai": [
             ("GPT-5.4 - Latest frontier, 1M context", "gpt-5.4"),
@@ -263,8 +263,8 @@ def select_deep_thinking_agent(provider) -> str:
     return choice
 
 def select_llm_provider() -> tuple[str, str]:
-    """Select the OpenAI api url using interactive selection."""
-    # Define OpenAI api options with their corresponding endpoints
+    """使用互動式選擇來選取 OpenAI API URL。"""
+    # 定義 OpenAI API 選項及其對應的端點
     BASE_URLS = [
         ("OpenAI", "https://api.openai.com/v1"),
         ("Google", "https://generativelanguage.googleapis.com/v1"),
@@ -301,7 +301,7 @@ def select_llm_provider() -> tuple[str, str]:
 
 
 def ask_openai_reasoning_effort() -> str:
-    """Ask for OpenAI reasoning effort level."""
+    """詢問 OpenAI 推理努力程度。"""
     choices = [
         questionary.Choice("Medium (Default)", "medium"),
         questionary.Choice("High (More thorough)", "high"),
@@ -319,9 +319,9 @@ def ask_openai_reasoning_effort() -> str:
 
 
 def ask_anthropic_effort() -> str | None:
-    """Ask for Anthropic effort level.
+    """詢問 Anthropic 努力程度。
 
-    Controls token usage and response thoroughness on Claude 4.5+ and 4.6 models.
+    控制 Claude 4.5+ 及 4.6 模型的 token 使用量與回應詳盡度。
     """
     return questionary.select(
         "Select Effort Level:",
@@ -339,10 +339,10 @@ def ask_anthropic_effort() -> str | None:
 
 
 def ask_gemini_thinking_config() -> str | None:
-    """Ask for Gemini thinking configuration.
+    """詢問 Gemini 思考配置。
 
-    Returns thinking_level: "high" or "minimal".
-    Client maps to appropriate API param based on model series.
+    回傳 thinking_level："high" 或 "minimal"。
+    客戶端會根據模型系列對應到適當的 API 參數。
     """
     return questionary.select(
         "Select Thinking Mode:",

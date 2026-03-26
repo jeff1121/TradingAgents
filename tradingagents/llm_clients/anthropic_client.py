@@ -12,11 +12,10 @@ _PASSTHROUGH_KWARGS = (
 
 
 class NormalizedChatAnthropic(ChatAnthropic):
-    """ChatAnthropic with normalized content output.
+    """具有正規化內容輸出的 ChatAnthropic。
 
-    Claude models with extended thinking or tool use return content as a
-    list of typed blocks. This normalizes to string for consistent
-    downstream handling.
+    啟用延伸思考或工具使用的 Claude 模型會以型別區塊清單回傳內容。
+    此類別將其正規化為字串，確保下游處理的一致性。
     """
 
     def invoke(self, input, config=None, **kwargs):
@@ -24,13 +23,13 @@ class NormalizedChatAnthropic(ChatAnthropic):
 
 
 class AnthropicClient(BaseLLMClient):
-    """Client for Anthropic Claude models."""
+    """Anthropic Claude 模型的客戶端。"""
 
     def __init__(self, model: str, base_url: Optional[str] = None, **kwargs):
         super().__init__(model, base_url, **kwargs)
 
     def get_llm(self) -> Any:
-        """Return configured ChatAnthropic instance."""
+        """回傳已設定的 ChatAnthropic 實例。"""
         llm_kwargs = {"model": self.model}
 
         for key in _PASSTHROUGH_KWARGS:
@@ -40,5 +39,5 @@ class AnthropicClient(BaseLLMClient):
         return NormalizedChatAnthropic(**llm_kwargs)
 
     def validate_model(self) -> bool:
-        """Validate model for Anthropic."""
+        """驗證 Anthropic 的模型。"""
         return validate_model("anthropic", self.model)

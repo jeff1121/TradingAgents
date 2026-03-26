@@ -14,33 +14,32 @@ def get_YFin_data_online(
     datetime.strptime(start_date, "%Y-%m-%d")
     datetime.strptime(end_date, "%Y-%m-%d")
 
-    # Create ticker object
+    # 建立 ticker 物件
     ticker = yf.Ticker(symbol.upper())
 
-    # Fetch historical data for the specified date range
+    # 取得指定日期範圍的歷史資料
     data = yf_retry(lambda: ticker.history(start=start_date, end=end_date))
 
-    # Check if data is empty
+    # 檢查資料是否為空
     if data.empty:
         return (
             f"No data found for symbol '{symbol}' between {start_date} and {end_date}"
         )
 
-    # Remove timezone info from index for cleaner output
+    # 移除索引中的時區資訊以獲得更簡潔的輸出
     if data.index.tz is not None:
         data.index = data.index.tz_localize(None)
 
-    # Round numerical values to 2 decimal places for cleaner display
+    # 將數值四捨五入至小數點後兩位以獲得更簡潔的顯示
     numeric_columns = ["Open", "High", "Low", "Close", "Adj Close"]
     for col in numeric_columns:
         if col in data.columns:
             data[col] = data[col].round(2)
 
-    # Convert DataFrame to CSV string
+    # 將 DataFrame 轉換為 CSV 字串
     csv_string = data.to_csv()
 
-    # Add header information
-    header = f"# Stock data for {symbol.upper()} from {start_date} to {end_date}\n"
+    # 加入標頭資訊
     header += f"# Total records: {len(data)}\n"
     header += f"# Data retrieved on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
 
@@ -56,7 +55,7 @@ def get_stock_stats_indicators_window(
 ) -> str:
 
     best_ind_params = {
-        # Moving Averages
+        # 移動平均線
         "close_50_sma": (
             "50 SMA: A medium-term trend indicator. "
             "Usage: Identify trend direction and serve as dynamic support/resistance. "
@@ -72,7 +71,7 @@ def get_stock_stats_indicators_window(
             "Usage: Capture quick shifts in momentum and potential entry points. "
             "Tips: Prone to noise in choppy markets; use alongside longer averages for filtering false signals."
         ),
-        # MACD Related
+        # MACD 相關
         "macd": (
             "MACD: Computes momentum via differences of EMAs. "
             "Usage: Look for crossovers and divergence as signals of trend changes. "
@@ -88,13 +87,13 @@ def get_stock_stats_indicators_window(
             "Usage: Visualize momentum strength and spot divergence early. "
             "Tips: Can be volatile; complement with additional filters in fast-moving markets."
         ),
-        # Momentum Indicators
+        # 動量指標
         "rsi": (
             "RSI: Measures momentum to flag overbought/oversold conditions. "
             "Usage: Apply 70/30 thresholds and watch for divergence to signal reversals. "
             "Tips: In strong trends, RSI may remain extreme; always cross-check with trend analysis."
         ),
-        # Volatility Indicators
+        # 波動率指標
         "boll": (
             "Bollinger Middle: A 20 SMA serving as the basis for Bollinger Bands. "
             "Usage: Acts as a dynamic benchmark for price movement. "
@@ -115,7 +114,7 @@ def get_stock_stats_indicators_window(
             "Usage: Set stop-loss levels and adjust position sizes based on current market volatility. "
             "Tips: It's a reactive measure, so use it as part of a broader risk management strategy."
         ),
-        # Volume-Based Indicators
+        # 成交量指標
         "vwma": (
             "VWMA: A moving average weighted by volume. "
             "Usage: Confirm trends by integrating price action with volume data. "
@@ -137,18 +136,18 @@ def get_stock_stats_indicators_window(
     curr_date_dt = datetime.strptime(curr_date, "%Y-%m-%d")
     before = curr_date_dt - relativedelta(days=look_back_days)
 
-    # Optimized: Get stock data once and calculate indicators for all dates
+    # 最佳化：一次取得股票資料並計算所有日期的指標
     try:
         indicator_data = _get_stock_stats_bulk(symbol, indicator, curr_date)
         
-        # Generate the date range we need
+        # 產生所需的日期範圍
         current_dt = curr_date_dt
         date_values = []
         
         while current_dt >= before:
             date_str = current_dt.strftime('%Y-%m-%d')
             
-            # Look up the indicator value for this date
+            # 查詢該日期的指標值
             if date_str in indicator_data:
                 indicator_value = indicator_data[date_str]
             else:
@@ -157,14 +156,14 @@ def get_stock_stats_indicators_window(
             date_values.append((date_str, indicator_value))
             current_dt = current_dt - relativedelta(days=1)
         
-        # Build the result string
+        # 組建結果字串
         ind_string = ""
         for date_str, value in date_values:
             ind_string += f"{date_str}: {value}\n"
         
     except Exception as e:
         print(f"Error getting bulk stockstats data: {e}")
-        # Fallback to original implementation if bulk method fails
+        # 若批次方法失敗，則退回至原始實作
         ind_string = ""
         curr_date_dt = datetime.strptime(curr_date, "%Y-%m-%d")
         while curr_date_dt >= before:
@@ -190,9 +189,9 @@ def _get_stock_stats_bulk(
     curr_date: Annotated[str, "current date for reference"]
 ) -> dict:
     """
-    Optimized bulk calculation of stock stats indicators.
-    Fetches data once and calculates indicator for all available dates.
-    Returns dict mapping date strings to indicator values.
+    最佳化的批次股票統計指標計算。
+    一次取得資料並計算所有可用日期的指標。
+    回傳日期字串對應至指標值的字典。
     """
     from .config import get_config
     import pandas as pd
@@ -203,7 +202,7 @@ def _get_stock_stats_bulk(
     online = config["data_vendors"]["technical_indicators"] != "local"
     
     if not online:
-        # Local data path
+        # 本地資料路徑
         try:
             data = pd.read_csv(
                 os.path.join(
@@ -215,7 +214,7 @@ def _get_stock_stats_bulk(
         except FileNotFoundError:
             raise Exception("Stockstats fail: Yahoo Finance data not fetched yet!")
     else:
-        # Online data fetching with caching
+        # 線上資料取得（含快取機制）
         today_date = pd.Timestamp.today()
         curr_date_dt = pd.to_datetime(curr_date)
 
@@ -249,16 +248,16 @@ def _get_stock_stats_bulk(
     df = wrap(data)
     df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
     
-    # Calculate the indicator for all rows at once
-    df[indicator]  # This triggers stockstats to calculate the indicator
+    # 一次計算所有列的指標
+    df[indicator]  # 觸發 stockstats 計算該指標
     
-    # Create a dictionary mapping date strings to indicator values
+    # 建立日期字串對應至指標值的字典
     result_dict = {}
     for _, row in df.iterrows():
         date_str = row["Date"]
         indicator_value = row[indicator]
         
-        # Handle NaN/None values
+        # 處理 NaN/None 值
         if pd.isna(indicator_value):
             result_dict[date_str] = "N/A"
         else:
@@ -297,7 +296,7 @@ def get_fundamentals(
     ticker: Annotated[str, "ticker symbol of the company"],
     curr_date: Annotated[str, "current date (not used for yfinance)"] = None
 ):
-    """Get company fundamentals overview from yfinance."""
+    """從 yfinance 取得公司基本面概覽。"""
     try:
         ticker_obj = yf.Ticker(ticker.upper())
         info = yf_retry(lambda: ticker_obj.info)
@@ -355,7 +354,7 @@ def get_balance_sheet(
     freq: Annotated[str, "frequency of data: 'annual' or 'quarterly'"] = "quarterly",
     curr_date: Annotated[str, "current date (not used for yfinance)"] = None
 ):
-    """Get balance sheet data from yfinance."""
+    """從 yfinance 取得資產負債表資料。"""
     try:
         ticker_obj = yf.Ticker(ticker.upper())
 
@@ -367,10 +366,10 @@ def get_balance_sheet(
         if data.empty:
             return f"No balance sheet data found for symbol '{ticker}'"
             
-        # Convert to CSV string for consistency with other functions
+        # 轉換為 CSV 字串以與其他函式保持一致
         csv_string = data.to_csv()
         
-        # Add header information
+        # 加入標頭資訊
         header = f"# Balance Sheet data for {ticker.upper()} ({freq})\n"
         header += f"# Data retrieved on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
         
@@ -385,7 +384,7 @@ def get_cashflow(
     freq: Annotated[str, "frequency of data: 'annual' or 'quarterly'"] = "quarterly",
     curr_date: Annotated[str, "current date (not used for yfinance)"] = None
 ):
-    """Get cash flow data from yfinance."""
+    """從 yfinance 取得現金流量資料。"""
     try:
         ticker_obj = yf.Ticker(ticker.upper())
 
@@ -397,10 +396,10 @@ def get_cashflow(
         if data.empty:
             return f"No cash flow data found for symbol '{ticker}'"
             
-        # Convert to CSV string for consistency with other functions
+        # 轉換為 CSV 字串以與其他函式保持一致
         csv_string = data.to_csv()
         
-        # Add header information
+        # 加入標頭資訊
         header = f"# Cash Flow data for {ticker.upper()} ({freq})\n"
         header += f"# Data retrieved on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
         
@@ -415,7 +414,7 @@ def get_income_statement(
     freq: Annotated[str, "frequency of data: 'annual' or 'quarterly'"] = "quarterly",
     curr_date: Annotated[str, "current date (not used for yfinance)"] = None
 ):
-    """Get income statement data from yfinance."""
+    """從 yfinance 取得損益表資料。"""
     try:
         ticker_obj = yf.Ticker(ticker.upper())
 
@@ -427,10 +426,10 @@ def get_income_statement(
         if data.empty:
             return f"No income statement data found for symbol '{ticker}'"
             
-        # Convert to CSV string for consistency with other functions
+        # 轉換為 CSV 字串以與其他函式保持一致
         csv_string = data.to_csv()
         
-        # Add header information
+        # 加入標頭資訊
         header = f"# Income Statement data for {ticker.upper()} ({freq})\n"
         header += f"# Data retrieved on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
         
@@ -443,7 +442,7 @@ def get_income_statement(
 def get_insider_transactions(
     ticker: Annotated[str, "ticker symbol of the company"]
 ):
-    """Get insider transactions data from yfinance."""
+    """從 yfinance 取得內部人交易資料。"""
     try:
         ticker_obj = yf.Ticker(ticker.upper())
         data = yf_retry(lambda: ticker_obj.insider_transactions)
@@ -451,10 +450,10 @@ def get_insider_transactions(
         if data is None or data.empty:
             return f"No insider transactions data found for symbol '{ticker}'"
             
-        # Convert to CSV string for consistency with other functions
+        # 轉換為 CSV 字串以與其他函式保持一致
         csv_string = data.to_csv()
         
-        # Add header information
+        # 加入標頭資訊
         header = f"# Insider Transactions data for {ticker.upper()}\n"
         header += f"# Data retrieved on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
         

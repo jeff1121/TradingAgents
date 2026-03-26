@@ -12,25 +12,25 @@ def create_llm_client(
     base_url: Optional[str] = None,
     **kwargs,
 ) -> BaseLLMClient:
-    """Create an LLM client for the specified provider.
+    """為指定的供應商建立 LLM 客戶端。
 
     Args:
-        provider: LLM provider (openai, anthropic, google, xai, ollama, openrouter)
-        model: Model name/identifier
-        base_url: Optional base URL for API endpoint
-        **kwargs: Additional provider-specific arguments
-            - http_client: Custom httpx.Client for SSL proxy or certificate customization
-            - http_async_client: Custom httpx.AsyncClient for async operations
-            - timeout: Request timeout in seconds
-            - max_retries: Maximum retry attempts
-            - api_key: API key for the provider
-            - callbacks: LangChain callbacks
+        provider: LLM 供應商（openai、anthropic、google、xai、ollama、openrouter）
+        model: 模型名稱／識別碼
+        base_url: 選用的 API 端點基底 URL
+        **kwargs: 其他供應商專用參數
+            - http_client: 自訂 httpx.Client，用於 SSL proxy 或憑證自訂
+            - http_async_client: 自訂 httpx.AsyncClient，用於非同步操作
+            - timeout: 請求逾時秒數
+            - max_retries: 最大重試次數
+            - api_key: 供應商的 API 金鑰
+            - callbacks: LangChain 回呼函式
 
     Returns:
-        Configured BaseLLMClient instance
+        已設定的 BaseLLMClient 實例
 
     Raises:
-        ValueError: If provider is not supported
+        ValueError: 當供應商不被支援時
     """
     provider_lower = provider.lower()
 

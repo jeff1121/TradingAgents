@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 
 
 def yf_retry(func, max_retries=3, base_delay=2.0):
-    """Execute a yfinance call with exponential backoff on rate limits.
+    """對 yfinance 呼叫執行指數退避重試以應對速率限制。
 
-    yfinance raises YFRateLimitError on HTTP 429 responses but does not
-    retry them internally. This wrapper adds retry logic specifically
-    for rate limits. Other exceptions propagate immediately.
+    yfinance 在收到 HTTP 429 回應時會拋出 YFRateLimitError，但不會
+    在內部進行重試。此包裝器專門針對速率限制加入重試邏輯。
+    其他例外會立即傳播。
     """
     for attempt in range(max_retries + 1):
         try:
@@ -32,7 +32,7 @@ def yf_retry(func, max_retries=3, base_delay=2.0):
 
 
 def _clean_dataframe(data: pd.DataFrame) -> pd.DataFrame:
-    """Normalize a stock DataFrame for stockstats: parse dates, drop invalid rows, fill price gaps."""
+    """正規化股票 DataFrame 以供 stockstats 使用：解析日期、移除無效列、填補價格缺口。"""
     data["Date"] = pd.to_datetime(data["Date"], errors="coerce")
     data = data.dropna(subset=["Date"])
 
@@ -65,7 +65,7 @@ class StockstatsUtils:
         start_date_str = start_date.strftime("%Y-%m-%d")
         end_date_str = end_date.strftime("%Y-%m-%d")
 
-        # Ensure cache directory exists
+        # 確保快取目錄存在
         os.makedirs(config["data_cache_dir"], exist_ok=True)
 
         data_file = os.path.join(
@@ -92,7 +92,7 @@ class StockstatsUtils:
         df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
         curr_date_str = curr_date_dt.strftime("%Y-%m-%d")
 
-        df[indicator]  # trigger stockstats to calculate the indicator
+        df[indicator]  # 觸發 stockstats 計算該指標
         matching_rows = df[df["Date"].str.startswith(curr_date_str)]
 
         if not matching_rows.empty:

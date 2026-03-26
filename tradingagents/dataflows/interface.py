@@ -1,6 +1,6 @@
 from typing import Annotated
 
-# Import from vendor-specific modules
+# 從各供應商專用模組匯入
 from .y_finance import (
     get_YFin_data_online,
     get_stock_stats_indicators_window,
@@ -24,10 +24,10 @@ from .alpha_vantage import (
 )
 from .alpha_vantage_common import AlphaVantageRateLimitError
 
-# Configuration and routing logic
+# 設定與路由邏輯
 from .config import get_config
 
-# Tools organized by category
+# 依類別組織的工具
 TOOLS_CATEGORIES = {
     "core_stock_apis": {
         "description": "OHLCV stock price data",
@@ -65,19 +65,19 @@ VENDOR_LIST = [
     "alpha_vantage",
 ]
 
-# Mapping of methods to their vendor-specific implementations
+# 方法對應至各供應商實作的映射
 VENDOR_METHODS = {
-    # core_stock_apis
+    # 核心股票 API
     "get_stock_data": {
         "alpha_vantage": get_alpha_vantage_stock,
         "yfinance": get_YFin_data_online,
     },
-    # technical_indicators
+    # 技術指標
     "get_indicators": {
         "alpha_vantage": get_alpha_vantage_indicator,
         "yfinance": get_stock_stats_indicators_window,
     },
-    # fundamental_data
+    # 基本面資料
     "get_fundamentals": {
         "alpha_vantage": get_alpha_vantage_fundamentals,
         "yfinance": get_yfinance_fundamentals,
@@ -94,7 +94,7 @@ VENDOR_METHODS = {
         "alpha_vantage": get_alpha_vantage_income_statement,
         "yfinance": get_yfinance_income_statement,
     },
-    # news_data
+    # 新聞資料
     "get_news": {
         "alpha_vantage": get_alpha_vantage_news,
         "yfinance": get_news_yfinance,
@@ -110,29 +110,29 @@ VENDOR_METHODS = {
 }
 
 def get_category_for_method(method: str) -> str:
-    """Get the category that contains the specified method."""
+    """取得包含指定方法的類別。"""
     for category, info in TOOLS_CATEGORIES.items():
         if method in info["tools"]:
             return category
     raise ValueError(f"Method '{method}' not found in any category")
 
 def get_vendor(category: str, method: str = None) -> str:
-    """Get the configured vendor for a data category or specific tool method.
-    Tool-level configuration takes precedence over category-level.
+    """取得資料類別或特定工具方法所設定的供應商。
+    工具層級的設定優先於類別層級。
     """
     config = get_config()
 
-    # Check tool-level configuration first (if method provided)
+    # 優先檢查工具層級設定（若有提供 method）
     if method:
         tool_vendors = config.get("tool_vendors", {})
         if method in tool_vendors:
             return tool_vendors[method]
 
-    # Fall back to category-level configuration
+    # 退回至類別層級設定
     return config.get("data_vendors", {}).get(category, "default")
 
 def route_to_vendor(method: str, *args, **kwargs):
-    """Route method calls to appropriate vendor implementation with fallback support."""
+    """將方法呼叫路由至適當的供應商實作，並支援備援機制。"""
     category = get_category_for_method(method)
     vendor_config = get_vendor(category, method)
     primary_vendors = [v.strip() for v in vendor_config.split(',')]
@@ -140,7 +140,7 @@ def route_to_vendor(method: str, *args, **kwargs):
     if method not in VENDOR_METHODS:
         raise ValueError(f"Method '{method}' not supported")
 
-    # Build fallback chain: primary vendors first, then remaining available vendors
+    # 建立備援鏈：優先使用主要供應商，再依序使用其餘可用供應商
     all_available_vendors = list(VENDOR_METHODS[method].keys())
     fallback_vendors = primary_vendors.copy()
     for vendor in all_available_vendors:
@@ -157,6 +157,6 @@ def route_to_vendor(method: str, *args, **kwargs):
         try:
             return impl_func(*args, **kwargs)
         except AlphaVantageRateLimitError:
-            continue  # Only rate limits trigger fallback
+            continue  # 僅速率限制會觸發備援
 
     raise RuntimeError(f"No available vendor for '{method}'")

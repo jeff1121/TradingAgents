@@ -1,19 +1,19 @@
-# TradingAgents/graph/reflection.py
+# TradingAgents/graph/reflection.py — 反思模組
 
 from typing import Dict, Any
 from langchain_openai import ChatOpenAI
 
 
 class Reflector:
-    """Handles reflection on decisions and updating memory."""
+    """處理對決策的反思並更新記憶。"""
 
     def __init__(self, quick_thinking_llm: ChatOpenAI):
-        """Initialize the reflector with an LLM."""
+        """以 LLM 初始化反思器。"""
         self.quick_thinking_llm = quick_thinking_llm
         self.reflection_system_prompt = self._get_reflection_prompt()
 
     def _get_reflection_prompt(self) -> str:
-        """Get the system prompt for reflection."""
+        """取得反思用的系統提示詞。"""
         return """
 You are an expert financial analyst tasked with reviewing trading decisions/analysis and providing a comprehensive, step-by-step analysis. 
 Your goal is to deliver detailed insights into investment decisions and highlight opportunities for improvement, adhering strictly to the following guidelines:
@@ -47,7 +47,7 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
 """
 
     def _extract_current_situation(self, current_state: Dict[str, Any]) -> str:
-        """Extract the current market situation from the state."""
+        """從狀態中提取當前市場情勢。"""
         curr_market_report = current_state["market_report"]
         curr_sentiment_report = current_state["sentiment_report"]
         curr_news_report = current_state["news_report"]
@@ -58,7 +58,7 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
     def _reflect_on_component(
         self, component_type: str, report: str, situation: str, returns_losses
     ) -> str:
-        """Generate reflection for a component."""
+        """為某個元件產生反思內容。"""
         messages = [
             ("system", self.reflection_system_prompt),
             (
@@ -71,7 +71,7 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
         return result
 
     def reflect_bull_researcher(self, current_state, returns_losses, bull_memory):
-        """Reflect on bull researcher's analysis and update memory."""
+        """對看多研究員的分析進行反思並更新記憶。"""
         situation = self._extract_current_situation(current_state)
         bull_debate_history = current_state["investment_debate_state"]["bull_history"]
 
@@ -81,7 +81,7 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
         bull_memory.add_situations([(situation, result)])
 
     def reflect_bear_researcher(self, current_state, returns_losses, bear_memory):
-        """Reflect on bear researcher's analysis and update memory."""
+        """對看空研究員的分析進行反思並更新記憶。"""
         situation = self._extract_current_situation(current_state)
         bear_debate_history = current_state["investment_debate_state"]["bear_history"]
 
@@ -91,7 +91,7 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
         bear_memory.add_situations([(situation, result)])
 
     def reflect_trader(self, current_state, returns_losses, trader_memory):
-        """Reflect on trader's decision and update memory."""
+        """對交易員的決策進行反思並更新記憶。"""
         situation = self._extract_current_situation(current_state)
         trader_decision = current_state["trader_investment_plan"]
 
@@ -101,7 +101,7 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
         trader_memory.add_situations([(situation, result)])
 
     def reflect_invest_judge(self, current_state, returns_losses, invest_judge_memory):
-        """Reflect on investment judge's decision and update memory."""
+        """對投資裁判的決策進行反思並更新記憶。"""
         situation = self._extract_current_situation(current_state)
         judge_decision = current_state["investment_debate_state"]["judge_decision"]
 
@@ -111,7 +111,7 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
         invest_judge_memory.add_situations([(situation, result)])
 
     def reflect_portfolio_manager(self, current_state, returns_losses, portfolio_manager_memory):
-        """Reflect on portfolio manager's decision and update memory."""
+        """對投資組合經理的決策進行反思並更新記憶。"""
         situation = self._extract_current_situation(current_state)
         judge_decision = current_state["risk_debate_state"]["judge_decision"]
 

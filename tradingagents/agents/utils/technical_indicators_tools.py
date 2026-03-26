@@ -20,8 +20,8 @@ def get_indicators(
     Returns:
         str: A formatted dataframe containing the technical indicators for the specified ticker symbol and indicator.
     """
-    # LLMs sometimes pass multiple indicators as a comma-separated string;
-    # split and process each individually.
+    # LLM 有時會將多個指標以逗號分隔的字串傳入；
+    # 逐一拆分並分別處理。
     indicators = [i.strip() for i in indicator.split(",") if i.strip()]
     if len(indicators) > 1:
         results = []

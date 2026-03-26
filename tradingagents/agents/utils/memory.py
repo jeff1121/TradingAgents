@@ -1,7 +1,7 @@
-"""Financial situation memory using BM25 for lexical similarity matching.
+"""使用 BM25 進行詞彙相似度匹配的金融情境記憶模組。
 
-Uses BM25 (Best Matching 25) algorithm for retrieval - no API calls,
-no token limits, works offline with any LLM provider.
+採用 BM25（Best Matching 25）演算法進行檢索——無需 API 呼叫、
+無 token 限制，可在離線環境下搭配任何 LLM 供應商使用。
 """
 
 from rank_bm25 import BM25Okapi
@@ -10,14 +10,14 @@ import re
 
 
 class FinancialSituationMemory:
-    """Memory system for storing and retrieving financial situations using BM25."""
+    """使用 BM25 儲存與檢索金融情境的記憶系統。"""
 
     def __init__(self, name: str, config: dict = None):
-        """Initialize the memory system.
+        """初始化記憶系統。
 
         Args:
-            name: Name identifier for this memory instance
-            config: Configuration dict (kept for API compatibility, not used for BM25)
+            name: 此記憶實例的名稱識別碼
+            config: 設定字典（為保持 API 相容性而保留，BM25 不使用）
         """
         self.name = name
         self.documents: List[str] = []
@@ -25,16 +25,16 @@ class FinancialSituationMemory:
         self.bm25 = None
 
     def _tokenize(self, text: str) -> List[str]:
-        """Tokenize text for BM25 indexing.
+        """將文字進行 BM25 索引所需的分詞處理。
 
-        Simple whitespace + punctuation tokenization with lowercasing.
+        使用空白字元與標點符號的簡易分詞，並轉為小寫。
         """
-        # Lowercase and split on non-alphanumeric characters
+        # 轉為小寫並依非英數字元分割
         tokens = re.findall(r'\b\w+\b', text.lower())
         return tokens
 
     def _rebuild_index(self):
-        """Rebuild the BM25 index after adding documents."""
+        """在新增文件後重建 BM25 索引。"""
         if self.documents:
             tokenized_docs = [self._tokenize(doc) for doc in self.documents]
             self.bm25 = BM25Okapi(tokenized_docs)
@@ -42,46 +42,46 @@ class FinancialSituationMemory:
             self.bm25 = None
 
     def add_situations(self, situations_and_advice: List[Tuple[str, str]]):
-        """Add financial situations and their corresponding advice.
+        """新增金融情境及其對應的建議。
 
         Args:
-            situations_and_advice: List of tuples (situation, recommendation)
+            situations_and_advice: 由 (情境, 建議) 元組組成的列表
         """
         for situation, recommendation in situations_and_advice:
             self.documents.append(situation)
             self.recommendations.append(recommendation)
 
-        # Rebuild BM25 index with new documents
+        # 使用新文件重建 BM25 索引
         self._rebuild_index()
 
     def get_memories(self, current_situation: str, n_matches: int = 1) -> List[dict]:
-        """Find matching recommendations using BM25 similarity.
+        """使用 BM25 相似度查找匹配的建議。
 
         Args:
-            current_situation: The current financial situation to match against
-            n_matches: Number of top matches to return
+            current_situation: 要進行匹配的當前金融情境
+            n_matches: 回傳的最佳匹配數量
 
         Returns:
-            List of dicts with matched_situation, recommendation, and similarity_score
+            包含 matched_situation、recommendation 和 similarity_score 的字典列表
         """
         if not self.documents or self.bm25 is None:
             return []
 
-        # Tokenize query
+        # 對查詢進行分詞
         query_tokens = self._tokenize(current_situation)
 
-        # Get BM25 scores for all documents
+        # 取得所有文件的 BM25 分數
         scores = self.bm25.get_scores(query_tokens)
 
-        # Get top-n indices sorted by score (descending)
+        # 取得依分數降序排列的前 n 個索引
         top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:n_matches]
 
-        # Build results
+        # 組建結果
         results = []
-        max_score = max(scores) if max(scores) > 0 else 1  # Normalize scores
+        max_score = max(scores) if max(scores) > 0 else 1  # 正規化分數
 
         for idx in top_indices:
-            # Normalize score to 0-1 range for consistency
+            # 將分數正規化至 0-1 範圍以保持一致性
             normalized_score = scores[idx] / max_score if max_score > 0 else 0
             results.append({
                 "matched_situation": self.documents[idx],
@@ -92,17 +92,17 @@ class FinancialSituationMemory:
         return results
 
     def clear(self):
-        """Clear all stored memories."""
+        """清除所有已儲存的記憶。"""
         self.documents = []
         self.recommendations = []
         self.bm25 = None
 
 
 if __name__ == "__main__":
-    # Example usage
+    # 使用範例
     matcher = FinancialSituationMemory("test_memory")
 
-    # Example data
+    # 範例資料
     example_data = [
         (
             "High inflation rate with rising interest rates and declining consumer spending",
@@ -122,10 +122,10 @@ if __name__ == "__main__":
         ),
     ]
 
-    # Add the example situations and recommendations
+    # 新增範例情境與建議
     matcher.add_situations(example_data)
 
-    # Example query
+    # 範例查詢
     current_situation = """
     Market showing increased volatility in tech sector, with institutional investors
     reducing positions and rising interest rates affecting growth stock valuations

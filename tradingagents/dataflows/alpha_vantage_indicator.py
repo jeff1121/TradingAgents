@@ -10,19 +10,19 @@ def get_indicator(
     series_type: str = "close"
 ) -> str:
     """
-    Returns Alpha Vantage technical indicator values over a time window.
+    回傳指定時間區間內的 Alpha Vantage 技術指標值。
 
     Args:
-        symbol: ticker symbol of the company
-        indicator: technical indicator to get the analysis and report of
-        curr_date: The current trading date you are trading on, YYYY-mm-dd
-        look_back_days: how many days to look back
-        interval: Time interval (daily, weekly, monthly)
-        time_period: Number of data points for calculation
-        series_type: The desired price type (close, open, high, low)
+        symbol: 公司的股票代號
+        indicator: 要取得分析報告的技術指標
+        curr_date: 目前交易日期，格式為 YYYY-mm-dd
+        look_back_days: 回顧天數
+        interval: 時間間隔（daily、weekly、monthly）
+        time_period: 用於計算的資料點數量
+        series_type: 所需的價格類型（close、open、high、low）
 
     Returns:
-        String containing indicator values and description
+        包含指標值與描述的字串
     """
     from datetime import datetime
     from dateutil.relativedelta import relativedelta
@@ -65,15 +65,15 @@ def get_indicator(
     curr_date_dt = datetime.strptime(curr_date, "%Y-%m-%d")
     before = curr_date_dt - relativedelta(days=look_back_days)
 
-    # Get the full data for the period instead of making individual calls
+    # 一次取得整段期間的資料，而非逐筆呼叫
     _, required_series_type = supported_indicators[indicator]
 
-    # Use the provided series_type or fall back to the required one
+    # 使用提供的 series_type，或退回至所需的預設值
     if required_series_type:
         series_type = required_series_type
 
     try:
-        # Get indicator data for the period
+        # 取得該期間的指標資料
         if indicator == "close_50_sma":
             data = _make_api_request("SMA", {
                 "symbol": symbol,
@@ -143,25 +143,25 @@ def get_indicator(
                 "datatype": "csv"
             })
         elif indicator == "vwma":
-            # Alpha Vantage doesn't have direct VWMA, so we'll return an informative message
-            # In a real implementation, this would need to be calculated from OHLCV data
+            # Alpha Vantage 沒有直接提供 VWMA，因此回傳說明訊息
+            # 在實際實作中，需從 OHLCV 資料計算
             return f"## VWMA (Volume Weighted Moving Average) for {symbol}:\n\nVWMA calculation requires OHLCV data and is not directly available from Alpha Vantage API.\nThis indicator would need to be calculated from the raw stock data using volume-weighted price averaging.\n\n{indicator_descriptions.get('vwma', 'No description available.')}"
         else:
             return f"Error: Indicator {indicator} not implemented yet."
 
-        # Parse CSV data and extract values for the date range
+        # 解析 CSV 資料並擷取日期範圍內的值
         lines = data.strip().split('\n')
         if len(lines) < 2:
             return f"Error: No data returned for {indicator}"
 
-        # Parse header and data
+        # 解析標頭與資料
         header = [col.strip() for col in lines[0].split(',')]
         try:
             date_col_idx = header.index('time')
         except ValueError:
             return f"Error: 'time' column not found in data for {indicator}. Available columns: {header}"
 
-        # Map internal indicator names to expected CSV column names from Alpha Vantage
+        # 將內部指標名稱映射至 Alpha Vantage 預期的 CSV 欄位名稱
         col_name_map = {
             "macd": "MACD", "macds": "MACD_Signal", "macdh": "MACD_Hist",
             "boll": "Real Middle Band", "boll_ub": "Real Upper Band", "boll_lb": "Real Lower Band",
@@ -172,7 +172,7 @@ def get_indicator(
         target_col_name = col_name_map.get(indicator)
 
         if not target_col_name:
-            # Default to the second column if no specific mapping exists
+            # 若無特定映射，預設使用第二欄
             value_col_idx = 1
         else:
             try:
@@ -188,17 +188,17 @@ def get_indicator(
             if len(values) > value_col_idx:
                 try:
                     date_str = values[date_col_idx].strip()
-                    # Parse the date
+                    # 解析日期
                     date_dt = datetime.strptime(date_str, "%Y-%m-%d")
 
-                    # Check if date is in our range
+                    # 檢查日期是否在我們的範圍內
                     if before <= date_dt <= curr_date_dt:
                         value = values[value_col_idx].strip()
                         result_data.append((date_dt, value))
                 except (ValueError, IndexError):
                     continue
 
-        # Sort by date and format output
+        # 依日期排序並格式化輸出
         result_data.sort(key=lambda x: x[0])
 
         ind_string = ""

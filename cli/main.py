@@ -6,7 +6,7 @@ from functools import wraps
 from rich.console import Console
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# 從 .env 檔案載入環境變數
 load_dotenv()
 from rich.panel import Panel
 from rich.spinner import Spinner
@@ -39,9 +39,9 @@ app = typer.Typer(
 )
 
 
-# Create a deque to store recent messages with a maximum length
+# 建立一個 deque 來儲存最近的訊息，並設定最大長度
 class MessageBuffer:
-    # Fixed teams that always run (not user-selectable)
+    # 固定團隊，始終執行（使用者不可選擇）
     FIXED_AGENTS = {
         "Research Team": ["Bull Researcher", "Bear Researcher", "Research Manager"],
         "Trading Team": ["Trader"],
@@ -49,7 +49,7 @@ class MessageBuffer:
         "Portfolio Management": ["Portfolio Manager"],
     }
 
-    # Analyst name mapping
+    # 分析師名稱對應
     ANALYST_MAPPING = {
         "market": "Market Analyst",
         "social": "Social Analyst",
@@ -57,9 +57,9 @@ class MessageBuffer:
         "fundamentals": "Fundamentals Analyst",
     }
 
-    # Report section mapping: section -> (analyst_key for filtering, finalizing_agent)
-    # analyst_key: which analyst selection controls this section (None = always included)
-    # finalizing_agent: which agent must be "completed" for this report to count as done
+    # 報告區段對應：section -> (analyst_key 用於篩選, finalizing_agent)
+    # analyst_key：哪個分析師選擇控制此區段（None = 始終包含）
+    # finalizing_agent：哪個 agent 必須為 "completed" 才算該報告完成
     REPORT_SECTIONS = {
         "market_report": ("market", "Market Analyst"),
         "sentiment_report": ("social", "Social Analyst"),
@@ -82,33 +82,33 @@ class MessageBuffer:
         self._last_message_id = None
 
     def init_for_analysis(self, selected_analysts):
-        """Initialize agent status and report sections based on selected analysts.
+        """根據選定的分析師初始化 agent 狀態與報告區段。
 
         Args:
-            selected_analysts: List of analyst type strings (e.g., ["market", "news"])
+            selected_analysts: 分析師類型字串清單（例如 ["market", "news"]）
         """
         self.selected_analysts = [a.lower() for a in selected_analysts]
 
-        # Build agent_status dynamically
+        # 動態建立 agent_status
         self.agent_status = {}
 
-        # Add selected analysts
+        # 加入選定的分析師
         for analyst_key in self.selected_analysts:
             if analyst_key in self.ANALYST_MAPPING:
                 self.agent_status[self.ANALYST_MAPPING[analyst_key]] = "pending"
 
-        # Add fixed teams
+        # 加入固定團隊
         for team_agents in self.FIXED_AGENTS.values():
             for agent in team_agents:
                 self.agent_status[agent] = "pending"
 
-        # Build report_sections dynamically
+        # 動態建立 report_sections
         self.report_sections = {}
         for section, (analyst_key, _) in self.REPORT_SECTIONS.items():
             if analyst_key is None or analyst_key in self.selected_analysts:
                 self.report_sections[section] = None
 
-        # Reset other state
+        # 重設其他狀態
         self.current_report = None
         self.final_report = None
         self.current_agent = None
@@ -117,20 +117,20 @@ class MessageBuffer:
         self._last_message_id = None
 
     def get_completed_reports_count(self):
-        """Count reports that are finalized (their finalizing agent is completed).
+        """計算已完成的報告數量（其負責完成的 agent 已完成）。
 
-        A report is considered complete when:
-        1. The report section has content (not None), AND
-        2. The agent responsible for finalizing that report has status "completed"
+        報告被視為完成的條件：
+        1. 報告區段有內容（非 None），且
+        2. 負責該報告最終定稿的 agent 狀態為 "completed"
 
-        This prevents interim updates (like debate rounds) from counting as completed.
+        這可防止中間更新（如辯論回合）被計為已完成。
         """
         count = 0
         for section in self.report_sections:
             if section not in self.REPORT_SECTIONS:
                 continue
             _, finalizing_agent = self.REPORT_SECTIONS[section]
-            # Report is complete if it has content AND its finalizing agent is done
+            # 報告完成的條件：有內容且負責的 agent 已完成
             has_content = self.report_sections.get(section) is not None
             agent_done = self.agent_status.get(finalizing_agent) == "completed"
             if has_content and agent_done:
@@ -156,18 +156,18 @@ class MessageBuffer:
             self._update_current_report()
 
     def _update_current_report(self):
-        # For the panel display, only show the most recently updated section
+        # 面板顯示時僅顯示最近更新的區段
         latest_section = None
         latest_content = None
 
-        # Find the most recently updated section
+        # 尋找最近更新的區段
         for section, content in self.report_sections.items():
             if content is not None:
                 latest_section = section
                 latest_content = content
                
         if latest_section and latest_content:
-            # Format the current section for display
+            # 格式化目前區段以供顯示
             section_titles = {
                 "market_report": "Market Analysis",
                 "sentiment_report": "Social Sentiment",
@@ -181,13 +181,13 @@ class MessageBuffer:
                 f"### {section_titles[latest_section]}\n{latest_content}"
             )
 
-        # Update the final complete report
+        # 更新最終完整報告
         self._update_final_report()
 
     def _update_final_report(self):
         report_parts = []
 
-        # Analyst Team Reports - use .get() to handle missing sections
+        # 分析師團隊報告 - 使用 .get() 處理缺少的區段
         analyst_sections = ["market_report", "sentiment_report", "news_report", "fundamentals_report"]
         if any(self.report_sections.get(section) for section in analyst_sections):
             report_parts.append("## Analyst Team Reports")
@@ -208,17 +208,17 @@ class MessageBuffer:
                     f"### Fundamentals Analysis\n{self.report_sections['fundamentals_report']}"
                 )
 
-        # Research Team Reports
+        # 研究團隊報告
         if self.report_sections.get("investment_plan"):
             report_parts.append("## Research Team Decision")
             report_parts.append(f"{self.report_sections['investment_plan']}")
 
-        # Trading Team Reports
+        # 交易團隊報告
         if self.report_sections.get("trader_investment_plan"):
             report_parts.append("## Trading Team Plan")
             report_parts.append(f"{self.report_sections['trader_investment_plan']}")
 
-        # Portfolio Management Decision
+        # 投資組合管理決策
         if self.report_sections.get("final_trade_decision"):
             report_parts.append("## Portfolio Management Decision")
             report_parts.append(f"{self.report_sections['final_trade_decision']}")
@@ -246,14 +246,14 @@ def create_layout():
 
 
 def format_tokens(n):
-    """Format token count for display."""
+    """格式化 token 數量以供顯示。"""
     if n >= 1000:
         return f"{n/1000:.1f}k"
     return str(n)
 
 
 def update_display(layout, spinner_text=None, stats_handler=None, start_time=None):
-    # Header with welcome message
+    # 包含歡迎訊息的標題
     layout["header"].update(
         Panel(
             "[bold green]Welcome to TradingAgents CLI[/bold green]\n"
@@ -265,7 +265,7 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
         )
     )
 
-    # Progress panel showing agent status
+    # 顯示 agent 狀態的進度面板
     progress_table = Table(
         show_header=True,
         header_style="bold magenta",
@@ -279,7 +279,7 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
     progress_table.add_column("Agent", style="green", justify="center", width=20)
     progress_table.add_column("Status", style="yellow", justify="center", width=20)
 
-    # Group agents by team - filter to only include agents in agent_status
+    # 依團隊分組 agent - 僅包含 agent_status 中的 agent
     all_teams = {
         "Analyst Team": [
             "Market Analyst",
@@ -293,7 +293,7 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
         "Portfolio Management": ["Portfolio Manager"],
     }
 
-    # Filter teams to only include agents that are in agent_status
+    # 篩選團隊，僅包含在 agent_status 中的 agent
     teams = {}
     for team, agents in all_teams.items():
         active_agents = [a for a in agents if a in message_buffer.agent_status]
@@ -301,7 +301,7 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
             teams[team] = active_agents
 
     for team, agents in teams.items():
-        # Add first agent with team name
+        # 加入第一個 agent 及團隊名稱
         first_agent = agents[0]
         status = message_buffer.agent_status.get(first_agent, "pending")
         if status == "in_progress":
@@ -318,7 +318,7 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
             status_cell = f"[{status_color}]{status}[/{status_color}]"
         progress_table.add_row(team, first_agent, status_cell)
 
-        # Add remaining agents in team
+        # 加入團隊中的其餘 agent
         for agent in agents[1:]:
             status = message_buffer.agent_status.get(agent, "pending")
             if status == "in_progress":
@@ -335,14 +335,14 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
                 status_cell = f"[{status_color}]{status}[/{status_color}]"
             progress_table.add_row("", agent, status_cell)
 
-        # Add horizontal line after each team
+        # 每個團隊後加入水平分隔線
         progress_table.add_row("─" * 20, "─" * 20, "─" * 20, style="dim")
 
     layout["progress"].update(
         Panel(progress_table, title="Progress", border_style="cyan", padding=(1, 2))
     )
 
-    # Messages panel showing recent messages and tool calls
+    # 顯示最近訊息與工具呼叫的訊息面板
     messages_table = Table(
         show_header=True,
         header_style="bold magenta",
@@ -358,33 +358,33 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
         "Content", style="white", no_wrap=False, ratio=1
     )  # Make content column expand
 
-    # Combine tool calls and messages
+    # 合併工具呼叫與訊息
     all_messages = []
 
-    # Add tool calls
+    # 加入工具呼叫
     for timestamp, tool_name, args in message_buffer.tool_calls:
         formatted_args = format_tool_args(args)
         all_messages.append((timestamp, "Tool", f"{tool_name}: {formatted_args}"))
 
-    # Add regular messages
+    # 加入一般訊息
     for timestamp, msg_type, content in message_buffer.messages:
         content_str = str(content) if content else ""
         if len(content_str) > 200:
             content_str = content_str[:197] + "..."
         all_messages.append((timestamp, msg_type, content_str))
 
-    # Sort by timestamp descending (newest first)
+    # 依時間戳記降序排列（最新的在前）
     all_messages.sort(key=lambda x: x[0], reverse=True)
 
-    # Calculate how many messages we can show based on available space
+    # 根據可用空間計算可顯示的訊息數量
     max_messages = 12
 
-    # Get the first N messages (newest ones)
+    # 取得前 N 則訊息（最新的）
     recent_messages = all_messages[:max_messages]
 
-    # Add messages to table (already in newest-first order)
+    # 將訊息加入表格（已按最新在前排序）
     for timestamp, msg_type, content in recent_messages:
-        # Format content with word wrapping
+        # 以自動換行格式化內容
         wrapped_content = Text(content, overflow="fold")
         messages_table.add_row(timestamp, msg_type, wrapped_content)
 
@@ -397,7 +397,7 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
         )
     )
 
-    # Analysis panel showing current report
+    # 顯示目前報告的分析面板
     if message_buffer.current_report:
         layout["analysis"].update(
             Panel(
@@ -417,27 +417,27 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
             )
         )
 
-    # Footer with statistics
-    # Agent progress - derived from agent_status dict
+    # 包含統計資料的頁尾
+    # Agent 進度 - 由 agent_status 字典推導
     agents_completed = sum(
         1 for status in message_buffer.agent_status.values() if status == "completed"
     )
     agents_total = len(message_buffer.agent_status)
 
-    # Report progress - based on agent completion (not just content existence)
+    # 報告進度 - 基於 agent 完成狀態（不僅是內容存在與否）
     reports_completed = message_buffer.get_completed_reports_count()
     reports_total = len(message_buffer.report_sections)
 
-    # Build stats parts
+    # 建立統計資料部分
     stats_parts = [f"Agents: {agents_completed}/{agents_total}"]
 
-    # LLM and tool stats from callback handler
+    # 來自回呼處理器的 LLM 與工具統計
     if stats_handler:
         stats = stats_handler.get_stats()
         stats_parts.append(f"LLM: {stats['llm_calls']}")
         stats_parts.append(f"Tools: {stats['tool_calls']}")
 
-        # Token display with graceful fallback
+        # Token 顯示，含優雅降級
         if stats["tokens_in"] > 0 or stats["tokens_out"] > 0:
             tokens_str = f"Tokens: {format_tokens(stats['tokens_in'])}\u2191 {format_tokens(stats['tokens_out'])}\u2193"
         else:
@@ -446,7 +446,7 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
 
     stats_parts.append(f"Reports: {reports_completed}/{reports_total}")
 
-    # Elapsed time
+    # 已耗費時間
     if start_time:
         elapsed = time.time() - start_time
         elapsed_str = f"\u23f1 {int(elapsed // 60):02d}:{int(elapsed % 60):02d}"
@@ -460,12 +460,12 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
 
 
 def get_user_selections():
-    """Get all user selections before starting the analysis display."""
-    # Display ASCII art welcome message
+    """在啟動分析顯示前取得所有使用者選擇。"""
+    # 顯示 ASCII 藝術歡迎訊息
     with open(Path(__file__).parent / "static" / "welcome.txt", "r") as f:
         welcome_ascii = f.read()
 
-    # Create welcome box content
+    # 建立歡迎框內容
     welcome_content = f"{welcome_ascii}\n"
     welcome_content += "[bold green]TradingAgents: Multi-Agents LLM Financial Trading Framework - CLI[/bold green]\n\n"
     welcome_content += "[bold]Workflow Steps:[/bold]\n"
@@ -474,7 +474,7 @@ def get_user_selections():
         "[dim]Built by [Tauric Research](https://github.com/TauricResearch)[/dim]"
     )
 
-    # Create and center the welcome box
+    # 建立並置中歡迎框
     welcome_box = Panel(
         welcome_content,
         border_style="green",
@@ -486,11 +486,11 @@ def get_user_selections():
     console.print()
     console.print()  # Add vertical space before announcements
 
-    # Fetch and display announcements (silent on failure)
+    # 取得並顯示公告（失敗時靜默處理）
     announcements = fetch_announcements()
     display_announcements(console, announcements)
 
-    # Create a boxed questionnaire for each step
+    # 為每個步驟建立框式問卷
     def create_question_box(title, prompt, default=None):
         box_content = f"[bold]{title}[/bold]\n"
         box_content += f"[dim]{prompt}[/dim]"
@@ -498,7 +498,7 @@ def get_user_selections():
             box_content += f"\n[dim]Default: {default}[/dim]"
         return Panel(box_content, border_style="blue", padding=(1, 2))
 
-    # Step 1: Ticker symbol
+    # 步驟 1：股票代碼
     console.print(
         create_question_box(
             "Step 1: Ticker Symbol",
@@ -508,7 +508,7 @@ def get_user_selections():
     )
     selected_ticker = get_ticker()
 
-    # Step 2: Analysis date
+    # 步驟 2：分析日期
     default_date = datetime.datetime.now().strftime("%Y-%m-%d")
     console.print(
         create_question_box(
@@ -519,7 +519,7 @@ def get_user_selections():
     )
     analysis_date = get_analysis_date()
 
-    # Step 3: Select analysts
+    # 步驟 3：選擇分析師
     console.print(
         create_question_box(
             "Step 3: Analysts Team", "Select your LLM analyst agents for the analysis"
@@ -530,7 +530,7 @@ def get_user_selections():
         f"[green]Selected analysts:[/green] {', '.join(analyst.value for analyst in selected_analysts)}"
     )
 
-    # Step 4: Research depth
+    # 步驟 4：研究深度
     console.print(
         create_question_box(
             "Step 4: Research Depth", "Select your research depth level"
@@ -538,7 +538,7 @@ def get_user_selections():
     )
     selected_research_depth = select_research_depth()
 
-    # Step 5: OpenAI backend
+    # 步驟 5：OpenAI 後端
     console.print(
         create_question_box(
             "Step 5: OpenAI backend", "Select which service to talk to"
@@ -546,7 +546,7 @@ def get_user_selections():
     )
     selected_llm_provider, backend_url = select_llm_provider()
     
-    # Step 6: Thinking agents
+    # 步驟 6：思考 agent
     console.print(
         create_question_box(
             "Step 6: Thinking Agents", "Select your thinking agents for analysis"
@@ -555,7 +555,7 @@ def get_user_selections():
     selected_shallow_thinker = select_shallow_thinking_agent(selected_llm_provider)
     selected_deep_thinker = select_deep_thinking_agent(selected_llm_provider)
 
-    # Step 7: Provider-specific thinking configuration
+    # 步驟 7：供應商專用思考配置
     thinking_level = None
     reasoning_effort = None
     anthropic_effort = None
@@ -602,18 +602,18 @@ def get_user_selections():
 
 
 def get_ticker():
-    """Get ticker symbol from user input."""
+    """從使用者輸入取得股票代碼。"""
     return typer.prompt("", default="SPY")
 
 
 def get_analysis_date():
-    """Get the analysis date from user input."""
+    """從使用者輸入取得分析日期。"""
     while True:
         date_str = typer.prompt(
             "", default=datetime.datetime.now().strftime("%Y-%m-%d")
         )
         try:
-            # Validate date format and ensure it's not in the future
+            # 驗證日期格式並確保不是未來日期
             analysis_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
             if analysis_date.date() > datetime.datetime.now().date():
                 console.print("[red]Error: Analysis date cannot be in the future[/red]")
@@ -626,11 +626,11 @@ def get_analysis_date():
 
 
 def save_report_to_disk(final_state, ticker: str, save_path: Path):
-    """Save complete analysis report to disk with organized subfolders."""
+    """將完整分析報告儲存至磁碟，使用有組織的子資料夾。"""
     save_path.mkdir(parents=True, exist_ok=True)
     sections = []
 
-    # 1. Analysts
+    # 1. 分析師
     analysts_dir = save_path / "1_analysts"
     analyst_parts = []
     if final_state.get("market_report"):
@@ -653,7 +653,7 @@ def save_report_to_disk(final_state, ticker: str, save_path: Path):
         content = "\n\n".join(f"### {name}\n{text}" for name, text in analyst_parts)
         sections.append(f"## I. Analyst Team Reports\n\n{content}")
 
-    # 2. Research
+    # 2. 研究
     if final_state.get("investment_debate_state"):
         research_dir = save_path / "2_research"
         debate = final_state["investment_debate_state"]
@@ -674,14 +674,14 @@ def save_report_to_disk(final_state, ticker: str, save_path: Path):
             content = "\n\n".join(f"### {name}\n{text}" for name, text in research_parts)
             sections.append(f"## II. Research Team Decision\n\n{content}")
 
-    # 3. Trading
+    # 3. 交易
     if final_state.get("trader_investment_plan"):
         trading_dir = save_path / "3_trading"
         trading_dir.mkdir(exist_ok=True)
         (trading_dir / "trader.md").write_text(final_state["trader_investment_plan"])
         sections.append(f"## III. Trading Team Plan\n\n### Trader\n{final_state['trader_investment_plan']}")
 
-    # 4. Risk Management
+    # 4. 風險管理
     if final_state.get("risk_debate_state"):
         risk_dir = save_path / "4_risk"
         risk = final_state["risk_debate_state"]
@@ -702,25 +702,25 @@ def save_report_to_disk(final_state, ticker: str, save_path: Path):
             content = "\n\n".join(f"### {name}\n{text}" for name, text in risk_parts)
             sections.append(f"## IV. Risk Management Team Decision\n\n{content}")
 
-        # 5. Portfolio Manager
+        # 5. 投資組合經理
         if risk.get("judge_decision"):
             portfolio_dir = save_path / "5_portfolio"
             portfolio_dir.mkdir(exist_ok=True)
             (portfolio_dir / "decision.md").write_text(risk["judge_decision"])
             sections.append(f"## V. Portfolio Manager Decision\n\n### Portfolio Manager\n{risk['judge_decision']}")
 
-    # Write consolidated report
+    # 寫入彙整報告
     header = f"# Trading Analysis Report: {ticker}\n\nGenerated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
     (save_path / "complete_report.md").write_text(header + "\n\n".join(sections))
     return save_path / "complete_report.md"
 
 
 def display_complete_report(final_state):
-    """Display the complete analysis report sequentially (avoids truncation)."""
+    """依序顯示完整分析報告（避免截斷）。"""
     console.print()
     console.print(Rule("Complete Analysis Report", style="bold green"))
 
-    # I. Analyst Team Reports
+    # I. 分析師團隊報告
     analysts = []
     if final_state.get("market_report"):
         analysts.append(("Market Analyst", final_state["market_report"]))
@@ -735,7 +735,7 @@ def display_complete_report(final_state):
         for title, content in analysts:
             console.print(Panel(Markdown(content), title=title, border_style="blue", padding=(1, 2)))
 
-    # II. Research Team Reports
+    # II. 研究團隊報告
     if final_state.get("investment_debate_state"):
         debate = final_state["investment_debate_state"]
         research = []
@@ -750,12 +750,12 @@ def display_complete_report(final_state):
             for title, content in research:
                 console.print(Panel(Markdown(content), title=title, border_style="blue", padding=(1, 2)))
 
-    # III. Trading Team
+    # III. 交易團隊
     if final_state.get("trader_investment_plan"):
         console.print(Panel("[bold]III. Trading Team Plan[/bold]", border_style="yellow"))
         console.print(Panel(Markdown(final_state["trader_investment_plan"]), title="Trader", border_style="blue", padding=(1, 2)))
 
-    # IV. Risk Management Team
+    # IV. 風險管理團隊
     if final_state.get("risk_debate_state"):
         risk = final_state["risk_debate_state"]
         risk_reports = []
@@ -770,20 +770,20 @@ def display_complete_report(final_state):
             for title, content in risk_reports:
                 console.print(Panel(Markdown(content), title=title, border_style="blue", padding=(1, 2)))
 
-        # V. Portfolio Manager Decision
+        # V. 投資組合經理決策
         if risk.get("judge_decision"):
             console.print(Panel("[bold]V. Portfolio Manager Decision[/bold]", border_style="green"))
             console.print(Panel(Markdown(risk["judge_decision"]), title="Portfolio Manager", border_style="blue", padding=(1, 2)))
 
 
 def update_research_team_status(status):
-    """Update status for research team members (not Trader)."""
+    """更新研究團隊成員的狀態（不含 Trader）。"""
     research_team = ["Bull Researcher", "Bear Researcher", "Research Manager"]
     for agent in research_team:
         message_buffer.update_agent_status(agent, status)
 
 
-# Ordered list of analysts for status transitions
+# 用於狀態轉換的分析師排序清單
 ANALYST_ORDER = ["market", "social", "news", "fundamentals"]
 ANALYST_AGENT_NAMES = {
     "market": "Market Analyst",
@@ -800,15 +800,15 @@ ANALYST_REPORT_MAP = {
 
 
 def update_analyst_statuses(message_buffer, chunk):
-    """Update analyst statuses based on accumulated report state.
+    """根據累積的報告狀態更新分析師狀態。
 
-    Logic:
-    - Store new report content from the current chunk if present
-    - Check accumulated report_sections (not just current chunk) for status
-    - Analysts with reports = completed
-    - First analyst without report = in_progress
-    - Remaining analysts without reports = pending
-    - When all analysts done, set Bull Researcher to in_progress
+    邏輯：
+    - 若目前 chunk 中有新的報告內容則儲存
+    - 檢查累積的 report_sections（不僅是目前 chunk）以判斷狀態
+    - 有報告的分析師 = completed
+    - 第一個沒有報告的分析師 = in_progress
+    - 其餘沒有報告的分析師 = pending
+    - 當所有分析師完成時，將 Bull Researcher 設為 in_progress
     """
     selected = message_buffer.selected_analysts
     found_active = False
@@ -820,11 +820,11 @@ def update_analyst_statuses(message_buffer, chunk):
         agent_name = ANALYST_AGENT_NAMES[analyst_key]
         report_key = ANALYST_REPORT_MAP[analyst_key]
 
-        # Capture new report content from current chunk
+        # 從目前 chunk 擷取新的報告內容
         if chunk.get(report_key):
             message_buffer.update_report_section(report_key, chunk[report_key])
 
-        # Determine status from accumulated sections, not just current chunk
+        # 從累積的區段判斷狀態，而非僅從目前 chunk
         has_report = bool(message_buffer.report_sections.get(report_key))
 
         if has_report:
@@ -835,19 +835,19 @@ def update_analyst_statuses(message_buffer, chunk):
         else:
             message_buffer.update_agent_status(agent_name, "pending")
 
-    # When all analysts complete, transition research team to in_progress
+    # 當所有分析師完成時，將研究團隊轉為 in_progress
     if not found_active and selected:
         if message_buffer.agent_status.get("Bull Researcher") == "pending":
             message_buffer.update_agent_status("Bull Researcher", "in_progress")
 
 def extract_content_string(content):
-    """Extract string content from various message formats.
-    Returns None if no meaningful text content is found.
+    """從各種訊息格式中擷取字串內容。
+    若未找到有意義的文字內容則回傳 None。
     """
     import ast
 
     def is_empty(val):
-        """Check if value is empty using Python's truthiness."""
+        """使用 Python 的真值判斷檢查值是否為空。"""
         if val is None or val == '':
             return True
         if isinstance(val, str):
@@ -883,11 +883,11 @@ def extract_content_string(content):
 
 
 def classify_message_type(message) -> tuple[str, str | None]:
-    """Classify LangChain message into display type and extract content.
+    """將 LangChain 訊息分類為顯示類型並擷取內容。
 
     Returns:
-        (type, content) - type is one of: User, Agent, Data, Control
-                        - content is extracted string or None
+        (type, content) - type 為以下之一：User、Agent、Data、Control
+                        - content 為擷取的字串或 None
     """
     from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
@@ -904,22 +904,22 @@ def classify_message_type(message) -> tuple[str, str | None]:
     if isinstance(message, AIMessage):
         return ("Agent", content)
 
-    # Fallback for unknown types
+    # 未知類型的後備處理
     return ("System", content)
 
 
 def format_tool_args(args, max_length=80) -> str:
-    """Format tool arguments for terminal display."""
+    """格式化工具參數以供終端顯示。"""
     result = str(args)
     if len(result) > max_length:
         return result[:max_length - 3] + "..."
     return result
 
 def run_analysis():
-    # First get all user selections
+    # 首先取得所有使用者選擇
     selections = get_user_selections()
 
-    # Create config with selected research depth
+    # 使用選定的研究深度建立設定
     config = DEFAULT_CONFIG.copy()
     config["max_debate_rounds"] = selections["research_depth"]
     config["max_risk_discuss_rounds"] = selections["research_depth"]
@@ -927,19 +927,19 @@ def run_analysis():
     config["deep_think_llm"] = selections["deep_thinker"]
     config["backend_url"] = selections["backend_url"]
     config["llm_provider"] = selections["llm_provider"].lower()
-    # Provider-specific thinking configuration
+    # 供應商專用思考配置
     config["google_thinking_level"] = selections.get("google_thinking_level")
     config["openai_reasoning_effort"] = selections.get("openai_reasoning_effort")
     config["anthropic_effort"] = selections.get("anthropic_effort")
 
-    # Create stats callback handler for tracking LLM/tool calls
+    # 建立用於追蹤 LLM/工具呼叫的統計回呼處理器
     stats_handler = StatsCallbackHandler()
 
-    # Normalize analyst selection to predefined order (selection is a 'set', order is fixed)
+    # 將分析師選擇正規化為預定義順序（選擇是 'set'，順序固定）
     selected_set = {analyst.value for analyst in selections["analysts"]}
     selected_analyst_keys = [a for a in ANALYST_ORDER if a in selected_set]
 
-    # Initialize the graph with callbacks bound to LLMs
+    # 初始化圖形，將 callbacks 綁定至 LLM
     graph = TradingAgentsGraph(
         selected_analyst_keys,
         config=config,
@@ -947,13 +947,13 @@ def run_analysis():
         callbacks=[stats_handler],
     )
 
-    # Initialize message buffer with selected analysts
+    # 使用選定的分析師初始化訊息緩衝區
     message_buffer.init_for_analysis(selected_analyst_keys)
 
-    # Track start time for elapsed display
+    # 追蹤開始時間以顯示已耗費時間
     start_time = time.time()
 
-    # Create result directory
+    # 建立結果目錄
     results_dir = Path(config["results_dir"]) / selections["ticker"] / selections["analysis_date"]
     results_dir.mkdir(parents=True, exist_ok=True)
     report_dir = results_dir / "reports"
@@ -1001,14 +1001,14 @@ def run_analysis():
     message_buffer.add_tool_call = save_tool_call_decorator(message_buffer, "add_tool_call")
     message_buffer.update_report_section = save_report_section_decorator(message_buffer, "update_report_section")
 
-    # Now start the display layout
+    # 現在開始顯示佈局
     layout = create_layout()
 
     with Live(layout, refresh_per_second=4) as live:
-        # Initial display
+        # 初始顯示
         update_display(layout, stats_handler=stats_handler, start_time=start_time)
 
-        # Add initial messages
+        # 加入初始訊息
         message_buffer.add_message("System", f"Selected ticker: {selections['ticker']}")
         message_buffer.add_message(
             "System", f"Analysis date: {selections['analysis_date']}"
@@ -1019,29 +1019,29 @@ def run_analysis():
         )
         update_display(layout, stats_handler=stats_handler, start_time=start_time)
 
-        # Update agent status to in_progress for the first analyst
+        # 將第一個分析師的 agent 狀態更新為 in_progress
         first_analyst = f"{selections['analysts'][0].value.capitalize()} Analyst"
         message_buffer.update_agent_status(first_analyst, "in_progress")
         update_display(layout, stats_handler=stats_handler, start_time=start_time)
 
-        # Create spinner text
+        # 建立載入動畫文字
         spinner_text = (
             f"Analyzing {selections['ticker']} on {selections['analysis_date']}..."
         )
         update_display(layout, spinner_text, stats_handler=stats_handler, start_time=start_time)
 
-        # Initialize state and get graph args with callbacks
+        # 初始化狀態並取得帶有 callbacks 的圖形參數
         init_agent_state = graph.propagator.create_initial_state(
             selections["ticker"], selections["analysis_date"]
         )
-        # Pass callbacks to graph config for tool execution tracking
-        # (LLM tracking is handled separately via LLM constructor)
+        # 將 callbacks 傳遞至圖形設定以追蹤工具執行
+        # （LLM 追蹤透過 LLM 建構函式另行處理）
         args = graph.propagator.get_graph_args(callbacks=[stats_handler])
 
-        # Stream the analysis
+        # 串流分析
         trace = []
         for chunk in graph.graph.stream(init_agent_state, **args):
-            # Process messages if present (skip duplicates via message ID)
+            # 處理訊息（若存在），透過訊息 ID 跳過重複項
             if len(chunk["messages"]) > 0:
                 last_message = chunk["messages"][-1]
                 msg_id = getattr(last_message, "id", None)
@@ -1049,12 +1049,12 @@ def run_analysis():
                 if msg_id != message_buffer._last_message_id:
                     message_buffer._last_message_id = msg_id
 
-                    # Add message to buffer
+                    # 將訊息加入緩衝區
                     msg_type, content = classify_message_type(last_message)
                     if content and content.strip():
                         message_buffer.add_message(msg_type, content)
 
-                    # Handle tool calls
+                    # 處理工具呼叫
                     if hasattr(last_message, "tool_calls") and last_message.tool_calls:
                         for tool_call in last_message.tool_calls:
                             if isinstance(tool_call, dict):
@@ -1064,17 +1064,17 @@ def run_analysis():
                             else:
                                 message_buffer.add_tool_call(tool_call.name, tool_call.args)
 
-            # Update analyst statuses based on report state (runs on every chunk)
+            # 根據報告狀態更新分析師狀態（每個 chunk 都執行）
             update_analyst_statuses(message_buffer, chunk)
 
-            # Research Team - Handle Investment Debate State
+            # 研究團隊 - 處理投資辯論狀態
             if chunk.get("investment_debate_state"):
                 debate_state = chunk["investment_debate_state"]
                 bull_hist = debate_state.get("bull_history", "").strip()
                 bear_hist = debate_state.get("bear_history", "").strip()
                 judge = debate_state.get("judge_decision", "").strip()
 
-                # Only update status when there's actual content
+                # 僅在有實際內容時更新狀態
                 if bull_hist or bear_hist:
                     update_research_team_status("in_progress")
                 if bull_hist:
@@ -1092,7 +1092,7 @@ def run_analysis():
                     update_research_team_status("completed")
                     message_buffer.update_agent_status("Trader", "in_progress")
 
-            # Trading Team
+            # 交易團隊
             if chunk.get("trader_investment_plan"):
                 message_buffer.update_report_section(
                     "trader_investment_plan", chunk["trader_investment_plan"]
@@ -1101,7 +1101,7 @@ def run_analysis():
                     message_buffer.update_agent_status("Trader", "completed")
                     message_buffer.update_agent_status("Aggressive Analyst", "in_progress")
 
-            # Risk Management Team - Handle Risk Debate State
+            # 風險管理團隊 - 處理風險辯論狀態
             if chunk.get("risk_debate_state"):
                 risk_state = chunk["risk_debate_state"]
                 agg_hist = risk_state.get("aggressive_history", "").strip()
@@ -1138,16 +1138,16 @@ def run_analysis():
                         message_buffer.update_agent_status("Neutral Analyst", "completed")
                         message_buffer.update_agent_status("Portfolio Manager", "completed")
 
-            # Update the display
+            # 更新顯示
             update_display(layout, stats_handler=stats_handler, start_time=start_time)
 
             trace.append(chunk)
 
-        # Get final state and decision
+        # 取得最終狀態與決策
         final_state = trace[-1]
         decision = graph.process_signal(final_state["final_trade_decision"])
 
-        # Update all agent statuses to completed
+        # 將所有 agent 狀態更新為 completed
         for agent in message_buffer.agent_status:
             message_buffer.update_agent_status(agent, "completed")
 
@@ -1155,17 +1155,17 @@ def run_analysis():
             "System", f"Completed analysis for {selections['analysis_date']}"
         )
 
-        # Update final report sections
+        # 更新最終報告區段
         for section in message_buffer.report_sections.keys():
             if section in final_state:
                 message_buffer.update_report_section(section, final_state[section])
 
         update_display(layout, stats_handler=stats_handler, start_time=start_time)
 
-    # Post-analysis prompts (outside Live context for clean interaction)
+    # 分析後提示（在 Live 環境外進行，以確保互動乾淨）
     console.print("\n[bold cyan]Analysis Complete![/bold cyan]\n")
 
-    # Prompt to save report
+    # 提示儲存報告
     save_choice = typer.prompt("Save report?", default="Y").strip().upper()
     if save_choice in ("Y", "YES", ""):
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -1182,7 +1182,7 @@ def run_analysis():
         except Exception as e:
             console.print(f"[red]Error saving report: {e}[/red]")
 
-    # Prompt to display full report
+    # 提示顯示完整報告
     display_choice = typer.prompt("\nDisplay full report on screen?", default="Y").strip().upper()
     if display_choice in ("Y", "YES", ""):
         display_complete_report(final_state)

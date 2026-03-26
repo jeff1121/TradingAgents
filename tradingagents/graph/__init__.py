@@ -1,4 +1,4 @@
-# TradingAgents/graph/__init__.py
+# TradingAgents/graph/__init__.py — 交易代理圖模組初始化
 
 from .trading_graph import TradingAgentsGraph
 from .conditional_logic import ConditionalLogic

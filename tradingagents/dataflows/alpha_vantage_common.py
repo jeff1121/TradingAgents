@@ -8,19 +8,19 @@ from io import StringIO
 API_BASE_URL = "https://www.alphavantage.co/query"
 
 def get_api_key() -> str:
-    """Retrieve the API key for Alpha Vantage from environment variables."""
+    """從環境變數取得 Alpha Vantage 的 API 金鑰。"""
     api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
     if not api_key:
         raise ValueError("ALPHA_VANTAGE_API_KEY environment variable is not set.")
     return api_key
 
 def format_datetime_for_api(date_input) -> str:
-    """Convert various date formats to YYYYMMDDTHHMM format required by Alpha Vantage API."""
+    """將各種日期格式轉換為 Alpha Vantage API 所需的 YYYYMMDDTHHMM 格式。"""
     if isinstance(date_input, str):
-        # If already in correct format, return as-is
+        # 若已是正確格式，直接回傳
         if len(date_input) == 13 and 'T' in date_input:
             return date_input
-        # Try to parse common date formats
+        # 嘗試解析常見日期格式
         try:
             dt = datetime.strptime(date_input, "%Y-%m-%d")
             return dt.strftime("%Y%m%dT0000")
@@ -36,16 +36,16 @@ def format_datetime_for_api(date_input) -> str:
         raise ValueError(f"Date must be string or datetime object, got {type(date_input)}")
 
 class AlphaVantageRateLimitError(Exception):
-    """Exception raised when Alpha Vantage API rate limit is exceeded."""
+    """當 Alpha Vantage API 超過速率限制時拋出的例外。"""
     pass
 
 def _make_api_request(function_name: str, params: dict) -> dict | str:
-    """Helper function to make API requests and handle responses.
+    """發送 API 請求並處理回應的輔助函式。
     
     Raises:
-        AlphaVantageRateLimitError: When API rate limit is exceeded
+        AlphaVantageRateLimitError: 當 API 超過速率限制時
     """
-    # Create a copy of params to avoid modifying the original
+    # 建立 params 的副本以避免修改原始資料
     api_params = params.copy()
     api_params.update({
         "function": function_name,
@@ -53,14 +53,14 @@ def _make_api_request(function_name: str, params: dict) -> dict | str:
         "source": "trading_agents",
     })
     
-    # Handle entitlement parameter if present in params or global variable
+    # 處理 params 或全域變數中的 entitlement 參數
     current_entitlement = globals().get('_current_entitlement')
     entitlement = api_params.get("entitlement") or current_entitlement
     
     if entitlement:
         api_params["entitlement"] = entitlement
     elif "entitlement" in api_params:
-        # Remove entitlement if it's None or empty
+        # 若 entitlement 為 None 或空值則移除
         api_params.pop("entitlement", None)
     
     response = requests.get(API_BASE_URL, params=api_params)
@@ -68,16 +68,16 @@ def _make_api_request(function_name: str, params: dict) -> dict | str:
 
     response_text = response.text
     
-    # Check if response is JSON (error responses are typically JSON)
+    # 檢查回應是否為 JSON（錯誤回應通常為 JSON）
     try:
         response_json = json.loads(response_text)
-        # Check for rate limit error
+        # 檢查速率限制錯誤
         if "Information" in response_json:
             info_message = response_json["Information"]
             if "rate limit" in info_message.lower() or "api key" in info_message.lower():
                 raise AlphaVantageRateLimitError(f"Alpha Vantage rate limit exceeded: {info_message}")
     except json.JSONDecodeError:
-        # Response is not JSON (likely CSV data), which is normal
+        # 回應非 JSON（可能是 CSV 資料），這是正常的
         pass
 
     return response_text
@@ -86,37 +86,36 @@ def _make_api_request(function_name: str, params: dict) -> dict | str:
 
 def _filter_csv_by_date_range(csv_data: str, start_date: str, end_date: str) -> str:
     """
-    Filter CSV data to include only rows within the specified date range.
+    篩選 CSV 資料，僅保留指定日期範圍內的列。
 
     Args:
-        csv_data: CSV string from Alpha Vantage API
-        start_date: Start date in yyyy-mm-dd format
-        end_date: End date in yyyy-mm-dd format
+        csv_data: 來自 Alpha Vantage API 的 CSV 字串
+        start_date: 開始日期，格式為 yyyy-mm-dd
+        end_date: 結束日期，格式為 yyyy-mm-dd
 
     Returns:
-        Filtered CSV string
+        篩選後的 CSV 字串
     """
     if not csv_data or csv_data.strip() == "":
         return csv_data
 
     try:
-        # Parse CSV data
-        df = pd.read_csv(StringIO(csv_data))
+        # 解析 CSV 資料
 
-        # Assume the first column is the date column (timestamp)
+        # 假設第一欄為日期欄（timestamp）
         date_col = df.columns[0]
         df[date_col] = pd.to_datetime(df[date_col])
 
-        # Filter by date range
+        # 依日期範圍篩選
         start_dt = pd.to_datetime(start_date)
         end_dt = pd.to_datetime(end_date)
 
         filtered_df = df[(df[date_col] >= start_dt) & (df[date_col] <= end_dt)]
 
-        # Convert back to CSV string
+        # 轉換回 CSV 字串
         return filtered_df.to_csv(index=False)
 
     except Exception as e:
-        # If filtering fails, return original data with a warning
+        # 若篩選失敗，回傳原始資料並附上警告
         print(f"Warning: Failed to filter CSV data by date range: {e}")
         return csv_data
