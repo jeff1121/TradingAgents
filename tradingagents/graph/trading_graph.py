@@ -62,6 +62,11 @@ class TradingAgentsGraph:
         self.config = config or DEFAULT_CONFIG
         self.callbacks = callbacks or []
 
+        # GITHUB_TOKEN 環境變數優先：若有設定且未指定其他供應商，自動切換為 GitHub Models
+        github_token = os.getenv("GITHUB_TOKEN", "")
+        if github_token and self.config.get("llm_provider", "openai") in ("openai",):
+            self.config["llm_provider"] = "github"
+
         # 更新介面的設定
         set_config(self.config)
 
@@ -89,13 +94,13 @@ class TradingAgentsGraph:
         deep_client = create_llm_client(
             provider=self.config["llm_provider"],
             model=self.config["deep_think_llm"],
-            base_url=self.config.get("backend_url"),
+            base_url=self._resolve_base_url(),
             **llm_kwargs,
         )
         quick_client = create_llm_client(
             provider=self.config["llm_provider"],
             model=self.config["quick_think_llm"],
-            base_url=self.config.get("backend_url"),
+            base_url=self._resolve_base_url(),
             **quick_kwargs,
         )
 
@@ -140,6 +145,10 @@ class TradingAgentsGraph:
 
         # 設定圖
         self.graph = self.graph_setup.setup_graph(selected_analysts)
+
+    def _resolve_base_url(self) -> Optional[str]:
+        """解析 LLM API 的基底 URL。"""
+        return self.config.get("backend_url")
 
     def _get_provider_kwargs(self) -> Dict[str, Any]:
         """取得供應商特定的 LLM 客戶端建立參數。"""

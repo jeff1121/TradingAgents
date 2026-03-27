@@ -28,6 +28,7 @@ _PROVIDER_CONFIG = {
     "xai": ("https://api.x.ai/v1", "XAI_API_KEY"),
     "openrouter": ("https://openrouter.ai/api/v1", "OPENROUTER_API_KEY"),
     "ollama": ("http://localhost:11434/v1", None),
+    "github": ("https://models.github.ai/inference/v1", "GITHUB_TOKEN"),
 }
 
 
@@ -56,11 +57,14 @@ class OpenAIClient(BaseLLMClient):
         # 供應商專用的基底 URL 與驗證
         if self.provider in _PROVIDER_CONFIG:
             base_url, api_key_env = _PROVIDER_CONFIG[self.provider]
-            llm_kwargs["base_url"] = base_url
-            if api_key_env:
-                api_key = os.environ.get(api_key_env)
-                if api_key:
-                    llm_kwargs["api_key"] = api_key
+            if base_url:
+                llm_kwargs["base_url"] = base_url
+                if api_key_env:
+                    api_key = os.environ.get(api_key_env)
+                    if api_key:
+                        llm_kwargs["api_key"] = api_key
+                else:
+                    llm_kwargs["api_key"] = "ollama"
             else:
                 llm_kwargs["api_key"] = "ollama"
         elif self.base_url:
@@ -70,6 +74,10 @@ class OpenAIClient(BaseLLMClient):
         for key in _PASSTHROUGH_KWARGS:
             if key in self.kwargs:
                 llm_kwargs[key] = self.kwargs[key]
+
+        # 預設 120 秒超時，防止 httpx SSL 讀取掛起
+        if "timeout" not in llm_kwargs:
+            llm_kwargs["timeout"] = 120
 
         # 原生 OpenAI：使用 Responses API 以確保所有模型系列的一致行為。
         # 第三方供應商使用 Chat Completions。

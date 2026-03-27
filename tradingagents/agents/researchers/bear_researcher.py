@@ -2,6 +2,8 @@ from langchain_core.messages import AIMessage
 import time
 import json
 
+from tradingagents.agents.utils.agent_utils import build_language_instruction
+
 
 def create_bear_researcher(llm, memory):
     def bear_node(state) -> dict:
@@ -42,6 +44,7 @@ Conversation history of the debate: {history}
 Last bull argument: {current_response}
 Reflections from similar situations and lessons learned: {past_memory_str}
 Use this information to deliver a compelling bear argument, refute the bull's claims, and engage in a dynamic debate that demonstrates the risks and weaknesses of investing in the stock. You must also address reflections and learn from lessons and mistakes you made in the past.
+{build_language_instruction()}
 """
 
         response = llm.invoke(prompt)

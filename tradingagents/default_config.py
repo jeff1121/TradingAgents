@@ -12,6 +12,8 @@ DEFAULT_CONFIG = {
     "deep_think_llm": "gpt-5.2",
     "quick_think_llm": "gpt-5-mini",
     "backend_url": "https://api.openai.com/v1",
+    # 報表語言設定（空字串表示不指定，使用 LLM 預設語言）
+    "report_language": "繁體中文",
     # 供應商專用思考配置
     "google_thinking_level": None,      # "high"、"minimal" 等
     "openai_reasoning_effort": None,    # "medium"、"high"、"low"

@@ -220,3 +220,13 @@ __marimo__/
 
 # Cache
 **/data_cache/
+
+# macOS
+.DS_Store
+
+# 分析結果（執行時期產出）
+results/
+eval_results/
+
+# MacOS
+.DS_Store

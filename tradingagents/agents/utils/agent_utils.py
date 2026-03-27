@@ -28,6 +28,16 @@ def build_instrument_context(ticker: str) -> str:
         "preserving any exchange suffix (e.g. `.TO`, `.L`, `.HK`, `.T`)."
     )
 
+
+def build_language_instruction() -> str:
+    """根據設定中的 report_language 產生語言指示。"""
+    from tradingagents.dataflows.config import get_config
+    config = get_config()
+    lang = config.get("report_language", "")
+    if lang:
+        return f"\n\nIMPORTANT: You MUST write your entire response and report in {lang}."
+    return ""
+
 def create_msg_delete():
     def delete_messages(state):
         """清除訊息並新增佔位訊息以相容 Anthropic"""

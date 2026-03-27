@@ -8,9 +8,10 @@ load_dotenv()
 
 # 建立自訂設定
 config = DEFAULT_CONFIG.copy()
-config["deep_think_llm"] = "gpt-5-mini"  # 使用不同的模型
-config["quick_think_llm"] = "gpt-5-mini"  # 使用不同的模型
-config["max_debate_rounds"] = 1  # 增加辯論回合數
+config["llm_provider"] = "github"
+config["deep_think_llm"] = "openai/gpt-4.1"
+config["quick_think_llm"] = "openai/gpt-4.1-mini"
+config["max_debate_rounds"] = 1  # 減少辯論回合數以加快測試
 
 # 配置資料供應商（預設使用 yfinance，不需額外 API 金鑰）
 config["data_vendors"] = {
